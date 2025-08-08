@@ -69,7 +69,9 @@ Preferred communication style: Simple, everyday language.
 
 **Fully Responsive Design Implementation**: Created comprehensive responsive design that adapts perfectly to laptop/PC, tablet, and mobile devices with optimized layouts, typography scaling, and touch-friendly interfaces.
 
-**Advanced Robot Animation Integration**: Replaced static content with high-quality animated SVG robot featuring gradient colors, smooth animations, and interactive hover effects that respond to scroll events.
+**Real HD Robot Video Integration**: Replaced SVG robot with real HD video that loops continuously, includes scroll-reactive effects and fallback system for optimal loading across all devices.
+
+**Customer Service Chatbot Implementation**: Added AI-powered customer service chat using Gemini 2.5 Flash API with real-time responses, professional interface, and comprehensive knowledge about Veo3 Lite features.
 
 **AI-Enhanced User Experience**: Integrates Gemini 2.5 Flash for intelligent prompt enhancement and automatic language translation to improve video generation quality.
 

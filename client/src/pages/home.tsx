@@ -209,13 +209,17 @@ export default function Home() {
                 </motion.div>
               </div>
 
-              {/* Right Content - Robot Video Animation */}
+              {/* Right Content - Real Robot Video with Scroll Effects */}
               <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 1.5, delay: 0.5 }}
                   className="relative w-full max-w-md lg:max-w-lg xl:max-w-xl"
+                  style={{
+                    y: useTransform(scrollYProgress, [0, 1], [0, -100]),
+                    rotateY: useTransform(scrollYProgress, [0, 1], [0, 25])
+                  }}
                 >
                   {/* Animated Robot Video Container */}
                   <motion.div
@@ -230,168 +234,110 @@ export default function Home() {
                     }}
                     transition={{ duration: 6, repeat: Infinity }}
                   >
-                    {/* Animated SVG Robot */}
+                    {/* Real Robot Video */}
                     <motion.div
                       className="relative w-full aspect-square bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl md:rounded-3xl overflow-hidden border border-slate-700"
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ scale: 1.02, rotateY: 5 }}
                       transition={{ type: "spring", stiffness: 300 }}
                     >
-                      <svg 
-                        className="w-full h-full p-4 md:p-8" 
-                        viewBox="0 0 200 200" 
-                        fill="none"
+                      <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover rounded-2xl md:rounded-3xl"
+                        style={{
+                          filter: "brightness(1.1) contrast(1.2) saturate(1.3)"
+                        }}
+                        onError={() => {
+                          // Fallback to second video source if first fails
+                          console.log("Video loading failed, using fallback");
+                        }}
                       >
-                        {/* Robot Body */}
-                        <motion.rect
-                          x="60" y="80" width="80" height="100" rx="12"
-                          fill="url(#robotGradient)"
-                          animate={{ 
-                            opacity: [0.8, 1, 0.8],
-                            scale: [1, 1.02, 1]
-                          }}
-                          transition={{ duration: 3, repeat: Infinity }}
-                        />
-                        
-                        {/* Robot Head */}
-                        <motion.rect
-                          x="70" y="40" width="60" height="50" rx="8"
-                          fill="url(#headGradient)"
-                          animate={{ 
-                            rotateZ: [-2, 2, -2],
-                            y: [40, 38, 40]
-                          }}
-                          transition={{ duration: 4, repeat: Infinity }}
-                        />
-                        
-                        {/* Eyes */}
-                        <motion.circle
-                          cx="85" cy="60" r="6"
-                          fill="#00ffff"
-                          animate={{ 
-                            opacity: [1, 0.3, 1],
-                            scale: [1, 1.2, 1]
-                          }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        />
-                        <motion.circle
-                          cx="115" cy="60" r="6"
-                          fill="#00ffff"
-                          animate={{ 
-                            opacity: [1, 0.3, 1],
-                            scale: [1, 1.2, 1]
-                          }}
-                          transition={{ duration: 2, repeat: Infinity, delay: 0.1 }}
-                        />
-                        
-                        {/* Arms */}
-                        <motion.rect
-                          x="35" y="90" width="20" height="60" rx="10"
-                          fill="url(#armGradient)"
-                          animate={{ 
-                            rotateZ: [-5, 5, -5],
-                            x: [35, 33, 35]
-                          }}
-                          transition={{ duration: 3.5, repeat: Infinity }}
-                        />
-                        <motion.rect
-                          x="145" y="90" width="20" height="60" rx="10"
-                          fill="url(#armGradient)"
-                          animate={{ 
-                            rotateZ: [5, -5, 5],
-                            x: [145, 147, 145]
-                          }}
-                          transition={{ duration: 3.5, repeat: Infinity }}
-                        />
-                        
-                        {/* Legs */}
-                        <motion.rect
-                          x="75" y="180" width="15" height="15" rx="7"
-                          fill="url(#legGradient)"
-                          animate={{ 
-                            y: [180, 182, 180],
-                            scaleY: [1, 0.9, 1]
-                          }}
-                          transition={{ duration: 2.5, repeat: Infinity }}
-                        />
-                        <motion.rect
-                          x="110" y="180" width="15" height="15" rx="7"
-                          fill="url(#legGradient)"
-                          animate={{ 
-                            y: [180, 182, 180],
-                            scaleY: [1, 0.9, 1]
-                          }}
-                          transition={{ duration: 2.5, repeat: Infinity, delay: 0.2 }}
-                        />
-                        
-                        {/* Floating Particles */}
-                        <motion.circle
-                          cx="40" cy="50" r="2"
-                          fill="#ff6b9d"
-                          animate={{ 
-                            y: [50, 30, 50],
-                            opacity: [0, 1, 0],
-                            scale: [0.5, 1, 0.5]
-                          }}
-                          transition={{ duration: 3, repeat: Infinity }}
-                        />
-                        <motion.circle
-                          cx="160" cy="70" r="1.5"
-                          fill="#a855f7"
-                          animate={{ 
-                            y: [70, 50, 70],
-                            opacity: [0, 1, 0],
-                            scale: [0.5, 1, 0.5]
-                          }}
-                          transition={{ duration: 4, repeat: Infinity, delay: 1 }}
-                        />
-                        <motion.circle
-                          cx="180" cy="120" r="2"
-                          fill="#06b6d4"
-                          animate={{ 
-                            x: [180, 160, 180],
-                            opacity: [0, 1, 0],
-                            scale: [0.5, 1, 0.5]
-                          }}
-                          transition={{ duration: 3.5, repeat: Infinity, delay: 2 }}
-                        />
-                        
-                        <defs>
-                          <linearGradient id="robotGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#a855f7" />
-                            <stop offset="50%" stopColor="#ec4899" />
-                            <stop offset="100%" stopColor="#06b6d4" />
-                          </linearGradient>
-                          <linearGradient id="headGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#8b5cf6" />
-                            <stop offset="100%" stopColor="#a855f7" />
-                          </linearGradient>
-                          <linearGradient id="armGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#ec4899" />
-                            <stop offset="100%" stopColor="#f97316" />
-                          </linearGradient>
-                          <linearGradient id="legGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#06b6d4" />
-                            <stop offset="100%" stopColor="#3b82f6" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
+                        <source src="https://videos.pexels.com/video-files/8199196/8199196-hd_1920_1080_30fps.mp4" type="video/mp4" />
+                        <source src="https://videos.pexels.com/video-files/5716044/5716044-hd_1920_1080_25fps.mp4" type="video/mp4" />
+                        <source src="https://videos.pexels.com/video-files/2278095/2278095-hd_1920_1080_30fps.mp4" type="video/mp4" />
+                        {/* Fallback SVG Robot if video fails */}
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                          <svg 
+                            className="w-3/4 h-3/4" 
+                            viewBox="0 0 200 200" 
+                            fill="none"
+                          >
+                            {/* Robot Body */}
+                            <rect x="60" y="80" width="80" height="100" rx="12" fill="url(#robotGradient)" />
+                            {/* Robot Head */}
+                            <rect x="70" y="40" width="60" height="50" rx="8" fill="url(#headGradient)" />
+                            {/* Eyes */}
+                            <circle cx="85" cy="60" r="6" fill="#00ffff" />
+                            <circle cx="115" cy="60" r="6" fill="#00ffff" />
+                            {/* Arms */}
+                            <rect x="35" y="90" width="20" height="60" rx="10" fill="url(#armGradient)" />
+                            <rect x="145" y="90" width="20" height="60" rx="10" fill="url(#armGradient)" />
+                            {/* Legs */}
+                            <rect x="75" y="180" width="15" height="15" rx="7" fill="url(#legGradient)" />
+                            <rect x="110" y="180" width="15" height="15" rx="7" fill="url(#legGradient)" />
+                            
+                            <defs>
+                              <linearGradient id="robotGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#a855f7" />
+                                <stop offset="50%" stopColor="#ec4899" />
+                                <stop offset="100%" stopColor="#06b6d4" />
+                              </linearGradient>
+                              <linearGradient id="headGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#8b5cf6" />
+                                <stop offset="100%" stopColor="#a855f7" />
+                              </linearGradient>
+                              <linearGradient id="armGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#ec4899" />
+                                <stop offset="100%" stopColor="#f97316" />
+                              </linearGradient>
+                              <linearGradient id="legGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#06b6d4" />
+                                <stop offset="100%" stopColor="#3b82f6" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        </div>
+                      </video>
                       
-                      {/* Glowing Overlay Effects */}
+                      {/* Video Overlay Effects */}
                       <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-cyan-500/10 rounded-2xl md:rounded-3xl"
+                        className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-cyan-500/10 rounded-2xl md:rounded-3xl mix-blend-overlay"
                         animate={{ 
                           opacity: [0.3, 0.7, 0.3],
                         }}
                         transition={{ duration: 4, repeat: Infinity }}
                       />
+
+                      {/* Scroll-Reactive Glowing Border */}
+                      <motion.div
+                        className="absolute inset-0 rounded-2xl md:rounded-3xl border-2"
+                        style={{
+                          borderColor: useTransform(scrollYProgress, [0, 0.5, 1], 
+                            ["rgba(168, 85, 247, 0.3)", "rgba(219, 39, 119, 0.6)", "rgba(6, 182, 212, 0.4)"]
+                          ),
+                          boxShadow: useTransform(scrollYProgress, [0, 0.5, 1], 
+                            [
+                              "0 0 20px rgba(168, 85, 247, 0.2)",
+                              "0 0 40px rgba(219, 39, 119, 0.4)",
+                              "0 0 30px rgba(6, 182, 212, 0.3)"
+                            ]
+                          )
+                        }}
+                      />
                     </motion.div>
                     
-                    {/* Corner Decorations */}
+                    {/* Floating Particles with Scroll Effects */}
                     <motion.div
                       className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full"
                       animate={{ 
                         scale: [1, 1.2, 1],
                         rotate: [0, 180, 360]
+                      }}
+                      style={{
+                        y: useTransform(scrollYProgress, [0, 1], [0, -50]),
+                        opacity: useTransform(scrollYProgress, [0, 0.5, 1], [1, 0.5, 0.8])
                       }}
                       transition={{ duration: 8, repeat: Infinity }}
                     />
@@ -401,6 +347,10 @@ export default function Home() {
                         scale: [1, 1.3, 1],
                         rotate: [360, 180, 0]
                       }}
+                      style={{
+                        x: useTransform(scrollYProgress, [0, 1], [0, 30]),
+                        opacity: useTransform(scrollYProgress, [0, 0.5, 1], [1, 0.7, 0.9])
+                      }}
                       transition={{ duration: 6, repeat: Infinity }}
                     />
                     <motion.div
@@ -408,6 +358,10 @@ export default function Home() {
                       animate={{ 
                         scale: [1, 1.1, 1],
                         rotate: [0, -180, -360]
+                      }}
+                      style={{
+                        y: useTransform(scrollYProgress, [0, 1], [0, 40]),
+                        x: useTransform(scrollYProgress, [0, 1], [0, -20])
                       }}
                       transition={{ duration: 10, repeat: Infinity }}
                     />

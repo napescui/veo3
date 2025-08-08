@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertVideoSchema, updateVideoSchema } from "@shared/schema";
 import axios from "axios";
 import { enhancePrompt, translateToEnglish, detectLanguage } from "./gemini";
+import { GoogleGenAI } from "@google/genai";
 
 const ANABOT_API_BASE = "https://anabot.my.id/api/ai";
 const ANABOT_API_KEY = "freeApikey";
@@ -275,6 +276,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Stream video error:", error);
       res.status(500).json({ message: "Failed to stream video" });
+    }
+  });
+
+  // Chat endpoint for customer service
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ 
+          message: "Message is required" 
+        });
+      }
+
+      // Initialize Gemini for chat
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+
+      // Create context for Veo3 Lite customer service
+      const systemPrompt = `You are a helpful customer service assistant for Veo3 Lite, an AI-powered video generation platform. 
+
+Key features of Veo3 Lite:
+- Generates 8-second professional videos from text prompts
+- Uses advanced AI technology for high-quality video creation
+- Supports automatic prompt enhancement and translation
+- Processes up to 10 concurrent video generations
+- No editing skills required - just imagination
+- Free to use with fast generation times (under 3 minutes)
+
+Answer user questions about the platform, help with troubleshooting, explain features, and provide general support. Be friendly, helpful, and professional. If you don't know something specific about the platform, acknowledge it and offer to help in other ways.
+
+Respond in the same language as the user's question.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        config: {
+          systemInstruction: systemPrompt,
+        },
+        contents: message,
+      });
+
+      const botResponse = response.text || "I apologize, but I'm having trouble responding right now. Please try again in a moment.";
+      res.json({ response: botResponse });
+    } catch (error) {
+      console.error("Chat error:", error);
+      res.status(500).json({ 
+        response: "I apologize, but I'm having trouble responding right now. Please try again in a moment or contact our support team directly." 
+      });
     }
   });
 
