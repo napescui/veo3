@@ -58,7 +58,7 @@ export default function CustomerService() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
