@@ -127,33 +127,26 @@ export default function VideoQueue({ videos }: VideoQueueProps) {
             <CardTitle className="text-lg text-white">Recent Videos</CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-64">
-              <div className="space-y-2">
+            <ScrollArea className="h-64 w-full">
+              <div className="flex gap-3 overflow-x-auto pb-2 min-w-max">
                 {videos.map((video) => (
                   <div
                     key={video.id}
-                    className="flex items-center justify-between p-3 bg-slate-800 rounded-lg"
+                    className="flex-shrink-0 w-72 p-3 bg-slate-800 rounded-lg"
                   >
-                    <div className="flex items-center gap-3 flex-1">
-                      {getStatusIcon(video.status)}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white truncate">
-                          {video.originalPrompt || video.prompt}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          {formatTime(video.createdAt)}
-                        </p>
+                    {/* Action buttons at the top */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1">
+                        {getStatusIcon(video.status)}
+                        <Badge
+                          variant="secondary"
+                          className={`${getStatusColor(video.status)} text-white text-xs`}
+                        >
+                          {video.status}
+                        </Badge>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Badge
-                        variant="secondary"
-                        className={`${getStatusColor(video.status)} text-white text-xs mr-1`}
-                      >
-                        {video.status}
-                      </Badge>
                       {video.status === "success" && (
-                        <>
+                        <div className="flex items-center gap-1">
                           <Button
                             size="sm"
                             variant="ghost"
@@ -184,8 +177,18 @@ export default function VideoQueue({ videos }: VideoQueueProps) {
                           >
                             <Share className="w-3 h-3" />
                           </Button>
-                        </>
+                        </div>
                       )}
+                    </div>
+                    
+                    {/* Video info */}
+                    <div>
+                      <p className="text-sm text-white line-clamp-2 mb-1">
+                        {video.originalPrompt || video.prompt}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {formatTime(video.createdAt)}
+                      </p>
                     </div>
                   </div>
                 ))}
