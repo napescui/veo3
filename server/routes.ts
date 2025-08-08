@@ -151,6 +151,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Proxy endpoint for video streaming
+  app.get("/api/videos/:id/stream", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const video = await storage.getVideo(id);
+
+      if (!video || !video.videoUrl) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+
+      // Proxy the video stream
+      try {
+        const response = await axios.get(video.videoUrl, {
+          responseType: 'stream',
+          timeout: 30000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+
+        // Set appropriate headers
+        res.set({
+          'Content-Type': 'video/mp4',
+          'Content-Disposition': `attachment; filename="video-${id}.mp4"`,
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET',
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'no-cache'
+        });
+
+        // Forward content-length if available
+        if (response.headers['content-length']) {
+          res.set('Content-Length', response.headers['content-length']);
+        }
+
+        // Handle errors during streaming
+        response.data.on('error', (streamError: any) => {
+          console.error('Stream error:', streamError);
+          if (!res.headersSent) {
+            res.status(500).json({ message: "Stream error" });
+          }
+        });
+
+        // Pipe the video stream
+        response.data.pipe(res);
+
+      } catch (proxyError) {
+        console.error("Video proxy error:", proxyError);
+        if (!res.headersSent) {
+          res.status(500).json({ message: "Failed to stream video" });
+        }
+      }
+
+    } catch (error) {
+      console.error("Stream video error:", error);
+      res.status(500).json({ message: "Failed to stream video" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

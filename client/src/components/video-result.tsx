@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Check, Download, Share, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -9,38 +9,26 @@ interface VideoResultProps {
 }
 
 export default function VideoResult({ video }: VideoResultProps) {
-  const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (!video.videoUrl) return;
 
-    setIsDownloading(true);
     try {
-      const response = await fetch(video.videoUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `video-${video.id}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Open video in new tab for download
+      window.open(video.videoUrl, '_blank');
       
       toast({
-        title: "Download started",
-        description: "Your video is being downloaded.",
+        title: "Video dibuka",
+        description: "Video dibuka di tab baru. Klik kanan pada video untuk menyimpan.",
       });
     } catch (error) {
       console.error("Download error:", error);
       toast({
-        title: "Download failed",
-        description: "Failed to download the video. Please try again.",
+        title: "Gagal membuka video",
+        description: "Silakan coba lagi atau copy link video.",
         variant: "destructive",
       });
-    } finally {
-      setIsDownloading(false);
     }
   };
 
@@ -92,11 +80,10 @@ export default function VideoResult({ video }: VideoResultProps) {
             variant="outline"
             size="sm"
             onClick={handleDownload}
-            disabled={isDownloading}
             className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border-slate-600"
           >
             <Download className="w-4 h-4 mr-2" />
-            {isDownloading ? "Downloading..." : "Download"}
+            Download
           </Button>
           <Button
             variant="outline"
@@ -116,7 +103,19 @@ export default function VideoResult({ video }: VideoResultProps) {
           className="w-full h-auto max-h-96" 
           controls 
           preload="metadata"
+          playsInline
+          crossOrigin="anonymous"
           src={video.videoUrl || undefined}
+          onLoadedMetadata={(e) => {
+            const duration = e.currentTarget.duration;
+            console.log('Video loaded, duration:', duration);
+          }}
+          onError={(e) => {
+            console.error('Video error:', e);
+          }}
+          onCanPlay={() => {
+            console.log('Video can play');
+          }}
         >
           Your browser does not support the video tag.
         </video>
