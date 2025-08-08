@@ -6,6 +6,7 @@ import { z } from "zod";
 export const videos = pgTable("videos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   prompt: text("prompt").notNull(),
+  originalPrompt: text("original_prompt"), // Store original prompt before translation
   generationId: text("generation_id"),
   status: text("status").notNull().default("pending"), // pending, processing, success, failed
   videoUrl: text("video_url"),
@@ -16,13 +17,15 @@ export const videos = pgTable("videos", {
 
 export const insertVideoSchema = createInsertSchema(videos).pick({
   prompt: true,
-});
+  originalPrompt: true,
+}).partial({ originalPrompt: true });
 
 export const updateVideoSchema = createInsertSchema(videos).pick({
   status: true,
   videoUrl: true,
   errorMessage: true,
   generationId: true,
+  originalPrompt: true,
 }).partial();
 
 export type InsertVideo = z.infer<typeof insertVideoSchema>;

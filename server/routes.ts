@@ -3,16 +3,65 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertVideoSchema, updateVideoSchema } from "@shared/schema";
 import axios from "axios";
+import { enhancePrompt, translateToEnglish, detectLanguage } from "./gemini";
 
 const ANABOT_API_BASE = "https://anabot.my.id/api/ai";
 const ANABOT_API_KEY = "freeApikey";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Enhance prompt endpoint
+  app.post("/api/enhance-prompt", async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      
+      if (!prompt || typeof prompt !== 'string') {
+        return res.status(400).json({ 
+          message: "Prompt is required" 
+        });
+      }
+
+      const enhanced = await enhancePrompt(prompt);
+      res.json({ enhanced });
+    } catch (error) {
+      console.error("Enhance prompt error:", error);
+      res.status(500).json({ 
+        message: "Gagal meningkatkan prompt" 
+      });
+    }
+  });
+
+  // Translate to English endpoint
+  app.post("/api/translate", async (req, res) => {
+    try {
+      const { text } = req.body;
+      
+      if (!text || typeof text !== 'string') {
+        return res.status(400).json({ 
+          message: "Text is required" 
+        });
+      }
+
+      const language = await detectLanguage(text);
+      
+      if (language === 'id') {
+        const translated = await translateToEnglish(text);
+        res.json({ translated, wasTranslated: true });
+      } else {
+        res.json({ translated: text, wasTranslated: false });
+      }
+    } catch (error) {
+      console.error("Translation error:", error);
+      res.status(500).json({ 
+        message: "Gagal menerjemahkan teks" 
+      });
+    }
+  });
+  
   // Create a new video generation request
   app.post("/api/videos", async (req, res) => {
     try {
-      const { prompt } = insertVideoSchema.parse(req.body);
+      const { prompt, autoTranslate = true } = req.body;
       
       if (!prompt || prompt.trim().length < 10) {
         return res.status(400).json({ 
@@ -20,10 +69,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      let finalPrompt = prompt;
+      let wasTranslated = false;
+
+      // Auto-translate if enabled
+      if (autoTranslate) {
+        try {
+          const language = await detectLanguage(prompt);
+          if (language === 'id') {
+            finalPrompt = await translateToEnglish(prompt);
+            wasTranslated = true;
+          }
+        } catch (translateError) {
+          console.error("Translation error:", translateError);
+          // Continue with original prompt if translation fails
+        }
+      }
+
       // Request video generation from anabot.my.id
       try {
         const response = await axios.get(
-          `${ANABOT_API_BASE}/veo3_v2?prompt=${encodeURIComponent(prompt)}&apikey=${ANABOT_API_KEY}`,
+          `${ANABOT_API_BASE}/veo3_v2?prompt=${encodeURIComponent(finalPrompt)}&apikey=${ANABOT_API_KEY}`,
           { timeout: 30000 }
         );
 
@@ -37,25 +103,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Store the video request in our database
         const video = await storage.createVideo({
-          prompt,
+          prompt: finalPrompt,
+          originalPrompt: wasTranslated ? prompt : undefined,
           generationId,
           status: "processing"
         });
 
-        res.json(video);
+        res.json({ ...video, wasTranslated });
 
       } catch (apiError) {
         console.error("Anabot API error:", apiError);
         
         // Store failed request
         const video = await storage.createVideo({
-          prompt,
+          prompt: finalPrompt,
+          originalPrompt: wasTranslated ? prompt : undefined,
           status: "failed",
-          errorMessage: "Failed to connect to video generation service"
+          errorMessage: "Gagal terhubung ke layanan video generation"
         });
 
         res.status(500).json({
-          message: "Failed to start video generation",
+          message: "Gagal memulai video generation",
           video
         });
       }
@@ -63,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Video creation error:", error);
       res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Invalid request" 
+        message: error instanceof Error ? error.message : "Data request tidak valid" 
       });
     }
   });

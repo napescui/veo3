@@ -2,7 +2,13 @@
 
 ## Overview
 
-VideoAI is a modern web application that transforms text prompts into professional 8-second videos using advanced AI technology. The platform provides a seamless user experience for generating videos without requiring any editing skills. Users can input creative text descriptions and receive AI-generated videos through integration with the anabot.my.id video generation service.
+VideoAI is a modern web application that transforms text prompts into professional 8-second videos using advanced AI technology. The platform provides a seamless user experience for generating videos without requiring any editing skills. Key features include:
+
+- **Text-to-Video Generation**: Convert text prompts into 8-second AI videos using anabot.my.id API
+- **Prompt Enhancement**: AI-powered prompt improvement using Gemini 2.5 Flash for better video quality
+- **Auto-Translation**: Automatic translation from Indonesian to English for optimal video generation
+- **Background Processing**: Queue up to 10 concurrent video generations with real-time status tracking
+- **Spam-Capable Generation**: Generate multiple videos simultaneously from different prompts
 
 ## User Preferences
 
@@ -40,11 +46,14 @@ Preferred communication style: Simple, everyday language.
 
 ### External Service Integrations
 - **Video Generation**: anabot.my.id API integration for AI video generation
+- **AI Enhancement**: Google Gemini 2.5 Flash API for prompt enhancement and translation services
 - **Video Processing Pipeline**: 
   - Submit generation requests with text prompts
   - Poll for completion status with automatic retries
   - Handle success/failure states with appropriate user feedback
+  - Support for concurrent processing of up to 10 videos
 - **Asset Management**: Static file serving for generated video content
+- **Language Processing**: Auto-detection and translation of Indonesian prompts to English
 
 ### Key Architectural Decisions
 
@@ -55,6 +64,10 @@ Preferred communication style: Simple, everyday language.
 **Component-Driven UI**: Built on shadcn/ui for consistent, accessible, and customizable components with proper TypeScript support throughout the component tree.
 
 **Real-time Status Updates**: Uses React Query with polling intervals to provide real-time updates on video generation progress without requiring WebSocket infrastructure.
+
+**Multi-Video Queue Management**: Implements background processing for up to 10 concurrent video generations with real-time status tracking and queue visualization.
+
+**AI-Enhanced User Experience**: Integrates Gemini 2.5 Flash for intelligent prompt enhancement and automatic language translation to improve video generation quality.
 
 ## External Dependencies
 

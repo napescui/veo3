@@ -3,11 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Play, Loader2, Clock, Film } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Play, Loader2, Clock, Film, Sparkles, Languages } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import StatusDisplay from "./status-display";
 import VideoResult from "./video-result";
 import ErrorDisplay from "./error-display";
+import VideoQueue from "./video-queue";
 import type { Video } from "@shared/schema";
 
 const EXAMPLE_PROMPTS = [
@@ -19,58 +22,100 @@ const EXAMPLE_PROMPTS = [
 
 export default function VideoGenerator() {
   const [prompt, setPrompt] = useState("");
-  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
+  const [autoTranslate, setAutoTranslate] = useState(true);
+  const [videos, setVideos] = useState<Video[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Generate video mutation
-  const generateVideo = useMutation({
+  // Enhance prompt mutation
+  const enhancePromptMutation = useMutation({
     mutationFn: async (prompt: string) => {
-      const response = await apiRequest("POST", "/api/videos", { prompt });
-      return response.json() as Promise<Video>;
+      const response = await apiRequest("POST", "/api/enhance-prompt", { prompt });
+      const data = await response.json();
+      return data.enhanced;
     },
-    onSuccess: (video) => {
-      setCurrentVideoId(video.id);
+    onSuccess: (enhanced: string) => {
+      setPrompt(enhanced);
       toast({
-        title: "Video generation started",
-        description: "Your video is being processed. This may take a few minutes.",
+        title: "Prompt ditingkatkan",
+        description: "Prompt Anda telah diperbaiki dan diperkaya.",
       });
     },
     onError: (error) => {
-      console.error("Generation error:", error);
+      console.error("Enhance error:", error);
       toast({
-        title: "Generation failed",
-        description: error instanceof Error ? error.message : "Failed to start video generation",
+        title: "Gagal meningkatkan prompt",
+        description: "Silakan coba lagi atau lanjutkan dengan prompt asli.",
         variant: "destructive",
       });
     },
   });
 
-  // Poll video status
-  const { data: currentVideo } = useQuery<Video | null>({
-    queryKey: ["/api/videos", currentVideoId, "status"],
-    enabled: !!currentVideoId,
-    queryFn: async () => {
-      if (!currentVideoId) return null;
-      const response = await fetch(`/api/videos/${currentVideoId}/status`);
-      if (!response.ok) throw new Error('Failed to fetch video status');
-      return await response.json() as Video;
+  // Generate video mutation
+  const generateVideo = useMutation({
+    mutationFn: async (prompt: string) => {
+      const response = await apiRequest("POST", "/api/videos", { 
+        prompt, 
+        autoTranslate 
+      });
+      return response.json() as Promise<Video & { wasTranslated?: boolean }>;
     },
-    refetchInterval: (data) => {
-      // Stop polling if video is complete or failed
-      if (data && (data.status === "success" || data.status === "failed")) {
-        return false;
+    onSuccess: (video) => {
+      setVideos(prev => [video, ...prev].slice(0, 10)); // Keep only last 10
+      if (video.wasTranslated) {
+        toast({
+          title: "Video dimulai",
+          description: "Prompt diterjemahkan ke bahasa Inggris dan video sedang diproses.",
+        });
+      } else {
+        toast({
+          title: "Video dimulai",
+          description: "Video sedang diproses. Ini mungkin memakan waktu beberapa menit.",
+        });
       }
-      return 5000; // Poll every 5 seconds
     },
-    refetchIntervalInBackground: false,
+    onError: (error) => {
+      console.error("Generation error:", error);
+      toast({
+        title: "Gagal generate video",
+        description: error instanceof Error ? error.message : "Gagal memulai video generation",
+        variant: "destructive",
+      });
+    },
   });
+
+  // Poll video status for processing videos
+  useEffect(() => {
+    const processingVideos = videos.filter(v => v.status === "processing");
+    
+    if (processingVideos.length === 0) return;
+
+    const interval = setInterval(async () => {
+      for (const video of processingVideos) {
+        try {
+          const response = await fetch(`/api/videos/${video.id}/status`);
+          if (response.ok) {
+            const updatedVideo = await response.json() as Video;
+            if (updatedVideo.status !== video.status) {
+              setVideos(prev => 
+                prev.map(v => v.id === video.id ? updatedVideo : v)
+              );
+            }
+          }
+        } catch (error) {
+          console.error(`Error polling video ${video.id}:`, error);
+        }
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [videos]);
 
   const handleGenerate = () => {
     if (!prompt.trim()) {
       toast({
-        title: "Prompt required",
-        description: "Please enter a prompt to generate your video.",
+        title: "Prompt diperlukan",
+        description: "Silakan masukkan prompt untuk generate video.",
         variant: "destructive",
       });
       return;
@@ -78,14 +123,37 @@ export default function VideoGenerator() {
 
     if (prompt.length < 10) {
       toast({
-        title: "Prompt too short",
-        description: "Please provide a more detailed prompt (at least 10 characters).",
+        title: "Prompt terlalu pendek",
+        description: "Silakan berikan prompt yang lebih detail (minimal 10 karakter).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const processingCount = videos.filter(v => v.status === "processing").length;
+    if (processingCount >= 10) {
+      toast({
+        title: "Queue penuh",
+        description: "Maksimal 10 video dapat diproses bersamaan. Tunggu sampai ada yang selesai.",
         variant: "destructive",
       });
       return;
     }
 
     generateVideo.mutate(prompt);
+  };
+
+  const handleEnhancePrompt = () => {
+    if (!prompt.trim()) {
+      toast({
+        title: "Prompt diperlukan",
+        description: "Silakan masukkan prompt terlebih dahulu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    enhancePromptMutation.mutate(prompt);
   };
 
   const handlePromptExample = (examplePrompt: string) => {
@@ -98,7 +166,9 @@ export default function VideoGenerator() {
     }
   };
 
-  const isGenerating = generateVideo.isPending || (currentVideo?.status === "processing");
+  const processingCount = videos.filter(v => v.status === "processing").length;
+  const isGenerating = generateVideo.isPending;
+  const canGenerate = processingCount < 10;
 
   return (
     <div className="space-y-8">
@@ -146,6 +216,23 @@ export default function VideoGenerator() {
           </div>
         </div>
 
+        {/* Settings */}
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="auto-translate"
+                checked={autoTranslate}
+                onCheckedChange={setAutoTranslate}
+              />
+              <Label htmlFor="auto-translate" className="text-sm text-slate-300 flex items-center gap-2">
+                <Languages className="w-4 h-4" />
+                Auto-translate Indonesian to English
+              </Label>
+            </div>
+          </div>
+        </div>
+
         {/* Generation Controls */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -155,41 +242,45 @@ export default function VideoGenerator() {
             </div>
             <div className="flex items-center space-x-2">
               <Film className="w-4 h-4 text-slate-400" />
-              <span className="text-sm text-slate-400">HD Quality</span>
+              <span className="text-sm text-slate-400">Queue: {processingCount}/10</span>
             </div>
           </div>
           
-          <Button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="bg-gradient-to-r from-primary to-secondary hover:from-indigo-600 hover:to-purple-600 px-8 py-3 rounded-xl font-semibold transition-all duration-200"
-          >
-            {isGenerating ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Play className="w-4 h-4 mr-2" />
-            )}
-            {isGenerating ? "Generating..." : "Generate Video"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleEnhancePrompt}
+              disabled={enhancePromptMutation.isPending || !prompt.trim()}
+              variant="outline"
+              size="sm"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border-slate-600"
+            >
+              {enhancePromptMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-2" />
+              )}
+              Enhance
+            </Button>
+            
+            <Button
+              onClick={handleGenerate}
+              disabled={isGenerating || !canGenerate}
+              className="bg-gradient-to-r from-primary to-secondary hover:from-indigo-600 hover:to-purple-600 px-8 py-3 rounded-xl font-semibold transition-all duration-200"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4 mr-2" />
+              )}
+              {isGenerating ? "Generating..." : "Generate Video"}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Status Display */}
-      {currentVideo && currentVideo.status === "processing" && (
-        <StatusDisplay video={currentVideo} />
-      )}
-
-      {/* Video Result */}
-      {currentVideo && currentVideo.status === "success" && currentVideo.videoUrl && (
-        <VideoResult video={currentVideo} />
-      )}
-
-      {/* Error Display */}
-      {currentVideo && currentVideo.status === "failed" && (
-        <ErrorDisplay 
-          video={currentVideo} 
-          onRetry={handleRetry}
-        />
+      {/* Video Queue */}
+      {videos.length > 0 && (
+        <VideoQueue videos={videos} />
       )}
     </div>
   );
