@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoAI - Text to Video Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        dark: '#0f172a',
+                        surface: '#1e293b',
+                        accent: '#f1f5f9'
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark text-accent font-sans min-h-screen">
+
+    <!-- @COMPONENT: Header [Navigation and branding] -->
+    <header class="border-b border-slate-800 bg-surface/50 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
+                        <i class="fas fa-video text-white text-lg"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">VideoAI</h1>
+                </div>
+                
+                <nav class="hidden md:flex items-center space-x-6">
+                    <a href="#" class="text-slate-300 hover:text-accent transition-colors">Gallery</a>
+                    <a href="#" class="text-slate-300 hover:text-accent transition-colors">Pricing</a>
+                    <a href="#" class="text-slate-300 hover:text-accent transition-colors">Docs</a>
+                    <button class="bg-primary hover:bg-indigo-600 px-4 py-2 rounded-lg transition-all duration-200 font-medium">
+                        Sign In
+                    </button>
+                </nav>
+
+                <button class="md:hidden text-accent">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <!-- @COMPONENT: Hero [Main video generation interface] -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+                Transform Your Ideas Into 
+                <span class="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Stunning Videos</span>
+            </h2>
+            <p class="text-xl text-slate-400 mb-8 max-w-2xl mx-auto">
+                Create professional 8-second videos from simple text prompts using advanced AI technology. No editing skills required.
+            </p>
+        </div>
+
+        <!-- @COMPONENT: VideoGenerator [Main generation interface] -->
+        <div class="bg-surface/80 backdrop-blur-sm rounded-2xl border border-slate-700 p-8 mb-8">
+            <!-- @COMPONENT: PromptInput [Text input for video generation] -->
+            <div class="mb-6">
+                <label for="prompt" class="block text-sm font-medium text-slate-300 mb-3">
+                    <i class="fas fa-magic mr-2"></i>Describe your video
+                </label>
+                <div class="relative">
+                    <textarea
+                        id="prompt"
+                        data-bind="prompt"
+                        data-mock="true"
+                        placeholder="A majestic eagle soaring through mountain peaks at sunset..."
+                        class="w-full h-32 px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-accent placeholder-slate-500 focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none transition-all duration-200"
+                        maxlength="500"
+                    ></textarea>
+                    <div class="absolute bottom-3 right-3 text-sm text-slate-500">
+                        <span data-bind="prompt.length">0</span>/500
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: PromptInput -->
+
+            <!-- @COMPONENT: ExamplePrompts [Suggested prompts for inspiration] -->
+            <div class="mb-6">
+                <p class="text-sm text-slate-400 mb-3">Try these examples:</p>
+                <div class="flex flex-wrap gap-2">
+                    <button class="px-3 py-2 bg-slate-800/50 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm transition-colors" data-event="click:fillPrompt" data-mock="true">
+                        A cat playing piano in a cozy room
+                    </button>
+                    <button class="px-3 py-2 bg-slate-800/50 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm transition-colors" data-event="click:fillPrompt" data-mock="true">
+                        Spiderman dancing on a rooftop
+                    </button>
+                    <button class="px-3 py-2 bg-slate-800/50 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm transition-colors" data-event="click:fillPrompt" data-mock="true">
+                        Ocean waves crashing against cliffs
+                    </button>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: ExamplePrompts -->
+
+            <!-- @COMPONENT: GenerationControls [Generate button and options] -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-clock text-slate-400"></i>
+                        <span class="text-sm text-slate-400">Duration: 8 seconds</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-film text-slate-400"></i>
+                        <span class="text-sm text-slate-400">HD Quality</span>
+                    </div>
+                </div>
+                
+                <button 
+                    id="generateBtn"
+                    data-event="click:generateVideo"
+                    data-implementation="Should validate prompt and call anabot.my.id API"
+                    class="bg-gradient-to-r from-primary to-secondary hover:from-indigo-600 hover:to-purple-600 px-8 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <i class="fas fa-play" id="generateIcon"></i>
+                    <span id="generateText">Generate Video</span>
+                </button>
+            </div>
+            <!-- @END_COMPONENT: GenerationControls -->
+        </div>
+        <!-- @END_COMPONENT: VideoGenerator -->
+
+        <!-- @COMPONENT: StatusDisplay [Shows generation progress and status] -->
+        <!-- @STATE: isGenerating:boolean = false, status:string = 'idle', progress:number = 0 -->
+        <div id="statusContainer" class="bg-surface/80 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 mb-8 hidden" data-mock="true">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-cog animate-spin text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-accent">Generating Video</h3>
+                        <p class="text-sm text-slate-400" data-bind="status">Processing your prompt...</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-slate-400">Attempt <span data-bind="currentAttempt">1</span>/15</div>
+                    <div class="text-xs text-slate-500">~2-3 minutes</div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-800 rounded-full h-2 mb-4">
+                <div class="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-500" style="width: 0%" data-bind="progress"></div>
+            </div>
+
+            <div class="text-sm text-slate-400">
+                <i class="fas fa-info-circle mr-2"></i>
+                Your video is being created using advanced AI. This may take a few minutes.
+            </div>
+        </div>
+        <!-- @END_COMPONENT: StatusDisplay -->
+
+        <!-- @COMPONENT: VideoResult [Displays generated video] -->
+        <!-- @STATE: videoUrl:string = '', isVideoReady:boolean = false -->
+        <div id="resultContainer" class="bg-surface/80 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 hidden" data-mock="true">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-check text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-accent">Video Generated Successfully!</h3>
+                        <p class="text-sm text-slate-400">Your 8-second AI video is ready</p>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm transition-colors" data-event="click:downloadVideo">
+                        <i class="fas fa-download mr-2"></i>Download
+                    </button>
+                    <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm transition-colors" data-event="click:shareVideo">
+                        <i class="fas fa-share mr-2"></i>Share
+                    </button>
+                </div>
+            </div>
+
+            <!-- Video Player -->
+            <div class="relative bg-black rounded-xl overflow-hidden mb-4">
+                <video 
+                    class="w-full h-auto max-h-96" 
+                    controls 
+                    preload="metadata"
+                    data-bind="videoSrc"
+                    data-mock-video="true"
+                    data-implementation="Should display video from anabot.my.id response"
+                >
+                    <source src="" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                
+                <!-- Video Overlay Info -->
+                <div class="absolute top-4 left-4 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-1 text-sm">
+                    <i class="fas fa-clock mr-1"></i>8s
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between text-sm text-slate-400">
+                <div>
+                    <strong>Prompt:</strong> <span data-bind="generatedPrompt" data-mock="true">A majestic eagle soaring through mountain peaks at sunset</span>
+                </div>
+                <div>
+                    Generated: <span data-bind="generatedTime" data-mock="true">2 minutes ago</span>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: VideoResult -->
+
+        <!-- @COMPONENT: ErrorDisplay [Shows generation errors] -->
+        <div id="errorContainer" class="bg-red-900/20 border border-red-800 rounded-2xl p-6 hidden" data-mock="true">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-white text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-red-400">Generation Failed</h3>
+                    <p class="text-sm text-red-300" data-bind="errorMessage">An error occurred while generating your video</p>
+                </div>
+            </div>
+            
+            <div class="bg-red-950/50 rounded-lg p-4 mb-4">
+                <p class="text-sm text-red-200" data-bind="errorDetails">
+                    The video generation service is temporarily unavailable. Please try again in a few minutes.
+                </p>
+            </div>
+
+            <button class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-medium transition-colors" data-event="click:retryGeneration">
+                <i class="fas fa-redo mr-2"></i>Try Again
+            </button>
+        </div>
+        <!-- @END_COMPONENT: ErrorDisplay -->
+
+    </main>
+
+    <!-- @COMPONENT: Features [Feature showcase section] -->
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="text-center mb-12">
+            <h3 class="text-3xl font-bold mb-4">Why Choose VideoAI?</h3>
+            <p class="text-slate-400 max-w-2xl mx-auto">Advanced AI technology meets intuitive design for effortless video creation</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-surface/50 border border-slate-700 rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                <div class="w-12 h-12 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-bolt text-white"></i>
+                </div>
+                <h4 class="font-semibold mb-2">Lightning Fast</h4>
+                <p class="text-slate-400 text-sm">Generate videos in just 2-3 minutes with our optimized AI pipeline</p>
+            </div>
+
+            <div class="bg-surface/50 border border-slate-700 rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                <div class="w-12 h-12 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-magic text-white"></i>
+                </div>
+                <h4 class="font-semibold mb-2">AI Powered</h4>
+                <p class="text-slate-400 text-sm">State-of-the-art models create stunning, realistic videos from text</p>
+            </div>
+
+            <div class="bg-surface/50 border border-slate-700 rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                <div class="w-12 h-12 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-download text-white"></i>
+                </div>
+                <h4 class="font-semibold mb-2">Easy Export</h4>
+                <p class="text-slate-400 text-sm">Download your videos in HD quality for any platform or purpose</p>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: Features -->
+
+    <!-- @COMPONENT: Footer [Site footer] -->
+    <footer class="border-t border-slate-800 bg-surface/30">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="md:col-span-2">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
+                            <i class="fas fa-video text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">VideoAI</span>
+                    </div>
+                    <p class="text-slate-400 mb-4">Transform your imagination into stunning videos with the power of AI.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-slate-400 hover:text-accent transition-colors">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-slate-400 hover:text-accent transition-colors">
+                            <i class="fab fa-discord"></i>
+                        </a>
+                        <a href="#" class="text-slate-400 hover:text-accent transition-colors">
+                            <i class="fab fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h5 class="font-semibold mb-4">Product</h5>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li><a href="#" class="hover:text-accent transition-colors">Features</a></li>
+                        <li><a href="#" class="hover:text-accent transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-accent transition-colors">API</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h5 class="font-semibold mb-4">Support</h5>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li><a href="#" class="hover:text-accent transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-accent transition-colors">Help Center</a></li>
+                        <li><a href="#" class="hover:text-accent transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-8 mt-8 text-center text-slate-400 text-sm">
+                <p>&copy; 2024 VideoAI. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <!-- @END_COMPONENT: Footer -->
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        (function() {
+            // Application state
+            let state = {
+                isGenerating: false,
+                currentAttempt: 0,
+                maxAttempts: 15,
+                generationId: null,
+                prompt: '',
+                videoUrl: null
+            };
+
+            // DOM elements
+            const elements = {
+                promptInput: document.getElementById('prompt'),
+                generateBtn: document.getElementById('generateBtn'),
+                generateIcon: document.getElementById('generateIcon'),
+                generateText: document.getElementById('generateText'),
+                statusContainer: document.getElementById('statusContainer'),
+                resultContainer: document.getElementById('resultContainer'),
+                errorContainer: document.getElementById('errorContainer')
+            };
+
+            // API configuration
+            const API_CONFIG = {
+                baseUrl: 'https://anabot.my.id/api/ai',
+                apiKey: 'freeApikey'
+            };
+
+            // Example prompts functionality
+            document.querySelectorAll('[data-event="click:fillPrompt"]').forEach(button => {
+                button.addEventListener('click', function() {
+                    elements.promptInput.value = this.textContent.trim();
+                    elements.promptInput.focus();
+                });
+            });
+
+            // Character counter for prompt input
+            elements.promptInput.addEventListener('input', function() {
+                const counter = document.querySelector('[data-bind="prompt.length"]');
+                if (counter) {
+                    counter.textContent = this.value.length;
+                }
+            });
+
+            // Generate button click handler
+            elements.generateBtn.addEventListener('click', function() {
+                const prompt = elements.promptInput.value.trim();
+                
+                if (!prompt) {
+                    showError('Please enter a prompt to generate your video.');
+                    return;
+                }
+
+                if (prompt.length < 10) {
+                    showError('Please provide a more detailed prompt (at least 10 characters).');
+                    return;
+                }
+
+                startGeneration(prompt);
+            });
+
+            // Start video generation process
+            function startGeneration(prompt) {
+                state.isGenerating = true;
+                state.prompt = prompt;
+                state.currentAttempt = 0;
+
+                // Update UI
+                updateGenerateButton(true);
+                showStatusDisplay();
+                hideResults();
+                hideErrors();
+
+                // TODO: Call anabot.my.id API
+                // This would implement the requestVeo3 function from the provided script
+                console.log('Starting generation for prompt:', prompt);
+                
+                // Simulate API call for mockup
+                simulateGeneration();
+            }
+
+            // Simulate the generation process for mockup purposes
+            function simulateGeneration() {
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 100) progress = 100;
+                    
+                    updateProgress(progress);
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            // Simulate random success/failure
+                            if (Math.random() > 0.3) {
+                                showSuccess();
+                            } else {
+                                showError('Failed to generate video. The prompt may be too complex or the service is temporarily unavailable.');
+                            }
+                        }, 1000);
+                    }
+                }, 2000);
+            }
+
+            // Update generate button state
+            function updateGenerateButton(isGenerating) {
+                elements.generateBtn.disabled = isGenerating;
+                elements.generateIcon.className = isGenerating ? 'fas fa-spinner animate-spin' : 'fas fa-play';
+                elements.generateText.textContent = isGenerating ? 'Generating...' : 'Generate Video';
+            }
+
+            // Show status display
+            function showStatusDisplay() {
+                elements.statusContainer.classList.remove('hidden');
+                elements.statusContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Update progress bar
+            function updateProgress(progress) {
+                const progressBar = document.querySelector('[data-bind="progress"]');
+                if (progressBar) {
+                    progressBar.style.width = `${progress}%`;
+                }
+            }
+
+            // Show successful generation
+            function showSuccess() {
+                state.isGenerating = false;
+                updateGenerateButton(false);
+                elements.statusContainer.classList.add('hidden');
+                elements.resultContainer.classList.remove('hidden');
+                elements.resultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Update result display
+                const promptDisplay = document.querySelector('[data-bind="generatedPrompt"]');
+                const timeDisplay = document.querySelector('[data-bind="generatedTime"]');
+                
+                if (promptDisplay) promptDisplay.textContent = state.prompt;
+                if (timeDisplay) timeDisplay.textContent = 'Just now';
+            }
+
+            // Show error message
+            function showError(message) {
+                state.isGenerating = false;
+                updateGenerateButton(false);
+                elements.statusContainer.classList.add('hidden');
+                elements.errorContainer.classList.remove('hidden');
+                elements.errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                const errorMessage = document.querySelector('[data-bind="errorMessage"]');
+                const errorDetails = document.querySelector('[data-bind="errorDetails"]');
+                
+                if (errorMessage) errorMessage.textContent = 'Generation Failed';
+                if (errorDetails) errorDetails.textContent = message;
+            }
+
+            // Hide results
+            function hideResults() {
+                elements.resultContainer.classList.add('hidden');
+            }
+
+            // Hide errors
+            function hideErrors() {
+                elements.errorContainer.classList.add('hidden');
+            }
+
+            // Retry button handler
+            document.querySelector('[data-event="click:retryGeneration"]')?.addEventListener('click', function() {
+                if (state.prompt) {
+                    startGeneration(state.prompt);
+                }
+            });
+
+            // Download button handler
+            document.querySelector('[data-event="click:downloadVideo"]')?.addEventListener('click', function() {
+                // TODO: Implement video download functionality
+                console.log('Download video requested');
+            });
+
+            // Share button handler
+            document.querySelector('[data-event="click:shareVideo"]')?.addEventListener('click', function() {
+                // TODO: Implement video sharing functionality
+                console.log('Share video requested');
+            });
+
+        })();
+    </script>
+
+</body>
+</html>
