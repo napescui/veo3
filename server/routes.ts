@@ -26,7 +26,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Enhance prompt error:", error);
       res.status(500).json({ 
-        message: "Gagal meningkatkan prompt" 
+        message: "Terjadi masalah dengan AI enhancement. Silakan coba dengan prompt asli atau coba lagi nanti." 
       });
     }
   });

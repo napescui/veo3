@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, Eye, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Trash2, Eye, Clock, CheckCircle, XCircle, Download, Share } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import VideoResult from "./video-result";
 import type { Video } from "@shared/schema";
@@ -16,6 +16,41 @@ interface VideoQueueProps {
 export default function VideoQueue({ videos }: VideoQueueProps) {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const { toast } = useToast();
+
+  const handleDownload = (video: Video) => {
+    if (!video.videoUrl) return;
+
+    try {
+      window.open(video.videoUrl, '_blank');
+      toast({
+        title: "Video dibuka",
+        description: "Video dibuka di tab baru. Klik kanan pada video untuk menyimpan.",
+      });
+    } catch (error) {
+      console.error("Download error:", error);
+      toast({
+        title: "Gagal membuka video",
+        description: "Silakan coba lagi atau copy link video.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleShare = (video: Video) => {
+    if (navigator.share && video.videoUrl) {
+      navigator.share({
+        title: 'Check out this AI-generated video!',
+        text: `Generated from prompt: "${video.prompt}"`,
+        url: video.videoUrl,
+      });
+    } else if (video.videoUrl) {
+      navigator.clipboard.writeText(video.videoUrl);
+      toast({
+        title: "Link copied",
+        description: "Video URL copied to clipboard.",
+      });
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -110,22 +145,46 @@ export default function VideoQueue({ videos }: VideoQueueProps) {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <Badge
                         variant="secondary"
-                        className={`${getStatusColor(video.status)} text-white text-xs`}
+                        className={`${getStatusColor(video.status)} text-white text-xs mr-1`}
                       >
                         {video.status}
                       </Badge>
                       {video.status === "success" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setSelectedVideo(video)}
-                          className="h-8 w-8 p-0 text-slate-400 hover:text-white"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedVideo(video)}
+                            className="h-7 w-7 p-0 text-slate-400 hover:text-white"
+                            data-testid={`button-view-video-${video.id}`}
+                            title="View video"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDownload(video)}
+                            className="h-7 w-7 p-0 text-slate-400 hover:text-white"
+                            data-testid={`button-download-video-${video.id}`}
+                            title="Download video"
+                          >
+                            <Download className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleShare(video)}
+                            className="h-7 w-7 p-0 text-slate-400 hover:text-white"
+                            data-testid={`button-share-video-${video.id}`}
+                            title="Share video"
+                          >
+                            <Share className="w-3 h-3" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>

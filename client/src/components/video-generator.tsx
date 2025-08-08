@@ -45,7 +45,7 @@ export default function VideoGenerator() {
       console.error("Enhance error:", error);
       toast({
         title: "Gagal meningkatkan prompt",
-        description: "Silakan coba lagi atau lanjutkan dengan prompt asli.",
+        description: "Terjadi masalah dengan AI enhancement. Silakan coba dengan prompt asli Anda atau coba lagi nanti.",
         variant: "destructive",
       });
     },
