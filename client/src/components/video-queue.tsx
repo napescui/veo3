@@ -128,11 +128,11 @@ export default function VideoQueue({ videos }: VideoQueueProps) {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-64 w-full">
-              <div className="flex gap-3 overflow-x-auto pb-2 min-w-max">
+              <div className="grid grid-cols-2 gap-3 pb-2">
                 {videos.map((video) => (
                   <div
                     key={video.id}
-                    className="flex-shrink-0 w-72 p-3 bg-slate-800 rounded-lg"
+                    className="p-3 bg-slate-800 rounded-lg"
                   >
                     {/* Action buttons at the top */}
                     <div className="flex items-center justify-between mb-2">
