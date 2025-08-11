@@ -115,38 +115,34 @@ export default function Home() {
             </motion.div>
             
             <nav className="hidden md:flex items-center space-x-6 lg:space-x-8">
-              {!showGenerator && (
-                <>
-                  <motion.a 
-                    href="#features" 
-                    className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
-                    whileHover={{ y: -2 }}
-                  >
-                    Features
-                  </motion.a>
-                  <motion.a 
-                    href="#demo" 
-                    className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
-                    whileHover={{ y: -2 }}
-                  >
-                    Demo
-                  </motion.a>
-                  <motion.a 
-                    href="#gallery" 
-                    className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
-                    whileHover={{ y: -2 }}
-                  >
-                    Gallery
-                  </motion.a>
-                  <motion.a 
-                    href="/editor" 
-                    className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
-                    whileHover={{ y: -2 }}
-                  >
-                    Editor Video
-                  </motion.a>
-                </>
-              )}
+              <motion.a 
+                href="#features" 
+                className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
+                whileHover={{ y: -2 }}
+              >
+                Features
+              </motion.a>
+              <motion.a 
+                href="#demo" 
+                className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
+                whileHover={{ y: -2 }}
+              >
+                Demo
+              </motion.a>
+              <motion.a 
+                href="#gallery" 
+                className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
+                whileHover={{ y: -2 }}
+              >
+                Gallery
+              </motion.a>
+              <motion.a 
+                href="/editor" 
+                className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
+                whileHover={{ y: -2 }}
+              >
+                Editor Video
+              </motion.a>
               
               {isAuthenticated ? (
                 <div className="flex items-center space-x-4">

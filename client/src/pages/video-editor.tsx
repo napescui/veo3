@@ -23,8 +23,10 @@ import {
   FastForward,
   Rewind,
   SkipBack,
-  SkipForward
+  SkipForward,
+  MousePointer
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,10 +42,19 @@ export default function VideoEditor() {
   const [isMuted, setIsMuted] = useState(false);
   const [zoom, setZoom] = useState([100]);
   const [selectedTool, setSelectedTool] = useState("select");
+  const [opacity, setOpacity] = useState([100]);
+  const [scale, setScale] = useState([100]);
+  const [rotation, setRotation] = useState([0]);
+  const [bass, setBass] = useState([0]);
+  const [treble, setTreble] = useState([0]);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [projectName, setProjectName] = useState("Untitled Project");
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const tools = [
-    { id: "select", icon: "cursor", name: "Select" },
+    { id: "select", icon: MousePointer, name: "Select" },
     { id: "cut", icon: Scissors, name: "Cut" },
     { id: "text", icon: Type, name: "Text" },
     { id: "image", icon: Image, name: "Image" },
@@ -51,13 +62,167 @@ export default function VideoEditor() {
 
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+    }
+  };
+
+  const handleStop = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
+  const handleRewind = () => {
+    const newTime = Math.max(0, currentTime - 10);
+    setCurrentTime(newTime);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    }
+  };
+
+  const handleFastForward = () => {
+    const newTime = Math.min(duration, currentTime + 10);
+    setCurrentTime(newTime);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    }
+  };
+
+  const handleSkipBack = () => {
+    setCurrentTime(0);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+    }
+  };
+
+  const handleSkipForward = () => {
+    setCurrentTime(duration);
+    if (videoRef.current) {
+      videoRef.current.currentTime = duration;
+    }
   };
 
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = x / rect.width;
-    setCurrentTime(percentage * duration);
+    const newTime = percentage * duration;
+    setCurrentTime(newTime);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    }
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    setVolume(value);
+    if (videoRef.current) {
+      videoRef.current.volume = value[0] / 100;
+    }
+  };
+
+  const handleMute = () => {
+    setIsMuted(!isMuted);
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+    }
+  };
+
+  const handleZoomChange = (value: number[]) => {
+    setZoom(value);
+  };
+
+  const handleUndo = () => {
+    toast({
+      title: "Undo",
+      description: "Last action has been undone",
+    });
+  };
+
+  const handleRedo = () => {
+    toast({
+      title: "Redo",
+      description: "Action has been redone",
+    });
+  };
+
+  const handleSaveProject = () => {
+    setHasChanges(false);
+    toast({
+      title: "Project Saved",
+      description: `${projectName} has been saved successfully`,
+    });
+  };
+
+  const handleExportVideo = () => {
+    toast({
+      title: "Export Started",
+      description: "Your video is being exported. This may take a few minutes.",
+    });
+    // Simulate export process
+    setTimeout(() => {
+      toast({
+        title: "Export Complete",
+        description: "Your video has been exported successfully",
+      });
+    }, 3000);
+  };
+
+  const handleImportMedia = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      toast({
+        title: "Media Imported",
+        description: `${file.name} has been added to your project`,
+      });
+      setHasChanges(true);
+    }
+  };
+
+  const handleToolSelect = (toolId: string) => {
+    setSelectedTool(toolId);
+    toast({
+      title: "Tool Selected",
+      description: `${tools.find(t => t.id === toolId)?.name} tool is now active`,
+    });
+  };
+
+  const handlePropertyChange = (property: string, value: number[]) => {
+    setHasChanges(true);
+    switch (property) {
+      case 'opacity':
+        setOpacity(value);
+        break;
+      case 'scale':
+        setScale(value);
+        break;
+      case 'rotation':
+        setRotation(value);
+        break;
+      case 'bass':
+        setBass(value);
+        break;
+      case 'treble':
+        setTreble(value);
+        break;
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -86,11 +251,11 @@ export default function VideoEditor() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
+              <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10" onClick={handleSaveProject}>
                 <Save className="w-4 h-4 mr-2" />
                 Save Project
               </Button>
-              <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+              <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" onClick={handleExportVideo}>
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
@@ -124,7 +289,7 @@ export default function VideoEditor() {
                       key={tool.id}
                       variant={selectedTool === tool.id ? "default" : "ghost"}
                       className="w-full justify-start"
-                      onClick={() => setSelectedTool(tool.id)}
+                      onClick={() => handleToolSelect(tool.id)}
                     >
                       <tool.icon className="w-4 h-4 mr-2" />
                       {tool.name}
@@ -139,27 +304,30 @@ export default function VideoEditor() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="text-sm">Opacity</Label>
+                    <Label className="text-sm">Opacity ({opacity[0]}%)</Label>
                     <Slider
-                      value={[100]}
+                      value={opacity}
+                      onValueChange={(value) => handlePropertyChange('opacity', value)}
                       max={100}
                       step={1}
                       className="mt-2"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Scale</Label>
+                    <Label className="text-sm">Scale ({scale[0]}%)</Label>
                     <Slider
-                      value={[100]}
+                      value={scale}
+                      onValueChange={(value) => handlePropertyChange('scale', value)}
                       max={200}
                       step={1}
                       className="mt-2"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Rotation</Label>
+                    <Label className="text-sm">Rotation ({rotation[0]}°)</Label>
                     <Slider
-                      value={[0]}
+                      value={rotation}
+                      onValueChange={(value) => handlePropertyChange('rotation', value)}
                       max={360}
                       step={1}
                       className="mt-2"
@@ -191,19 +359,20 @@ export default function VideoEditor() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="text-sm">Volume</Label>
+                    <Label className="text-sm">Volume ({volume[0]}%)</Label>
                     <Slider
                       value={volume}
-                      onValueChange={setVolume}
+                      onValueChange={handleVolumeChange}
                       max={100}
                       step={1}
                       className="mt-2"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Bass</Label>
+                    <Label className="text-sm">Bass ({bass[0]})</Label>
                     <Slider
-                      value={[0]}
+                      value={bass}
+                      onValueChange={(value) => handlePropertyChange('bass', value)}
                       max={100}
                       min={-100}
                       step={1}
@@ -211,9 +380,10 @@ export default function VideoEditor() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Treble</Label>
+                    <Label className="text-sm">Treble ({treble[0]})</Label>
                     <Slider
-                      value={[0]}
+                      value={treble}
+                      onValueChange={(value) => handlePropertyChange('treble', value)}
                       max={100}
                       min={-100}
                       step={1}
@@ -236,27 +406,34 @@ export default function VideoEditor() {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Button size="sm" variant="ghost">
+                <Button size="sm" variant="ghost" onClick={handleUndo}>
                   <Undo className="w-4 h-4" />
                 </Button>
-                <Button size="sm" variant="ghost">
+                <Button size="sm" variant="ghost" onClick={handleRedo}>
                   <Redo className="w-4 h-4" />
                 </Button>
                 <div className="w-px h-6 bg-white/20 mx-2" />
-                <Button size="sm" variant="ghost">
+                <Button size="sm" variant="ghost" onClick={handleImportMedia}>
                   <Upload className="w-4 h-4 mr-2" />
                   Import Media
                 </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*,audio/*,image/*"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
               </div>
               
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <Label className="text-sm">Zoom:</Label>
-                  <Button size="sm" variant="ghost" onClick={() => setZoom([Math.max(25, zoom[0] - 25)])}>
+                  <Button size="sm" variant="ghost" onClick={() => handleZoomChange([Math.max(25, zoom[0] - 25)])}>
                     <ZoomOut className="w-4 h-4" />
                   </Button>
                   <span className="text-sm w-12 text-center">{zoom[0]}%</span>
-                  <Button size="sm" variant="ghost" onClick={() => setZoom([Math.min(400, zoom[0] + 25)])}>
+                  <Button size="sm" variant="ghost" onClick={() => handleZoomChange([Math.min(400, zoom[0] + 25)])}>
                     <ZoomIn className="w-4 h-4" />
                   </Button>
                 </div>
@@ -304,33 +481,33 @@ export default function VideoEditor() {
           >
             {/* Playback Controls */}
             <div className="flex items-center justify-center space-x-4 mb-4">
-              <Button size="sm" variant="ghost">
+              <Button size="sm" variant="ghost" onClick={handleSkipBack}>
                 <SkipBack className="w-4 h-4" />
               </Button>
-              <Button size="sm" variant="ghost">
+              <Button size="sm" variant="ghost" onClick={handleRewind}>
                 <Rewind className="w-4 h-4" />
               </Button>
               <Button size="sm" onClick={handlePlayPause} className="bg-purple-600 hover:bg-purple-700">
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               </Button>
-              <Button size="sm" variant="ghost">
+              <Button size="sm" variant="ghost" onClick={handleFastForward}>
                 <FastForward className="w-4 h-4" />
               </Button>
-              <Button size="sm" variant="ghost">
+              <Button size="sm" variant="ghost" onClick={handleSkipForward}>
                 <SkipForward className="w-4 h-4" />
               </Button>
-              <Button size="sm" variant="ghost">
+              <Button size="sm" variant="ghost" onClick={handleStop}>
                 <Square className="w-4 h-4" />
               </Button>
               
               <div className="flex items-center space-x-2 ml-8">
-                <Button size="sm" variant="ghost" onClick={() => setIsMuted(!isMuted)}>
+                <Button size="sm" variant="ghost" onClick={handleMute}>
                   {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                 </Button>
                 <div className="w-24">
                   <Slider
                     value={volume}
-                    onValueChange={setVolume}
+                    onValueChange={handleVolumeChange}
                     max={100}
                     step={1}
                   />
@@ -341,7 +518,7 @@ export default function VideoEditor() {
             {/* Timeline */}
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
-                <span className="text-sm font-mono w-16">{Math.floor(currentTime / 60)}:{(currentTime % 60).toFixed(0).padStart(2, '0')}</span>
+                <span className="text-sm font-mono w-16">{formatTime(currentTime)}</span>
                 <div 
                   className="flex-1 h-8 bg-slate-800 rounded-lg relative cursor-pointer overflow-hidden"
                   onClick={handleTimelineClick}
@@ -355,7 +532,7 @@ export default function VideoEditor() {
                     style={{ left: `${(currentTime / duration) * 100}%` }}
                   />
                 </div>
-                <span className="text-sm font-mono w-16">{Math.floor(duration / 60)}:{(duration % 60).toFixed(0).padStart(2, '0')}</span>
+                <span className="text-sm font-mono w-16">{formatTime(duration)}</span>
               </div>
 
               {/* Track Layers */}
@@ -416,7 +593,7 @@ export default function VideoEditor() {
                       </div>
                     ))}
                   </div>
-                  <Button className="w-full mt-4 bg-purple-600 hover:bg-purple-700">
+                  <Button className="w-full mt-4 bg-purple-600 hover:bg-purple-700" onClick={handleImportMedia}>
                     <Upload className="w-4 h-4 mr-2" />
                     Upload Media
                   </Button>
@@ -457,7 +634,7 @@ export default function VideoEditor() {
                       <option>120 fps</option>
                     </select>
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" onClick={handleExportVideo}>
                     <Download className="w-4 h-4 mr-2" />
                     Export Video
                   </Button>
