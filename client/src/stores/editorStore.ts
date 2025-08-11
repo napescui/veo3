@@ -361,6 +361,58 @@ export const useEditorStore = create<EditorState>()(
   }))
 );
 
+// Playback loop functionality
+let animationFrameId: number | null = null;
+let lastTime = 0;
+
+useEditorStore.subscribe(
+  (state) => state.timeline.isPlaying,
+  (isPlaying) => {
+    if (isPlaying) {
+      lastTime = performance.now();
+      const updateTime = (currentTime: number) => {
+        const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+        lastTime = currentTime;
+        
+        const { timeline, project } = useEditorStore.getState();
+        if (!timeline.isPlaying || !project) return;
+        
+        // Calculate new time
+        let newTime = timeline.currentTime + deltaTime;
+        
+        // Get total project duration
+        const totalDuration = project.tracks
+          .flatMap(track => track.clips)
+          .reduce((max, clip) => Math.max(max, clip.endTime), 0);
+        
+        // Handle end of timeline
+        if (newTime >= totalDuration) {
+          if (timeline.isLooping) {
+            newTime = 0;
+          } else {
+            useEditorStore.getState().setPlaying(false);
+            useEditorStore.getState().setCurrentTime(totalDuration);
+            return;
+          }
+        }
+        
+        useEditorStore.getState().setCurrentTime(newTime);
+        
+        if (timeline.isPlaying) {
+          animationFrameId = requestAnimationFrame(updateTime);
+        }
+      };
+      
+      animationFrameId = requestAnimationFrame(updateTime);
+    } else {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    }
+  }
+);
+
 // Auto-save functionality
 let autoSaveTimer: NodeJS.Timeout;
 

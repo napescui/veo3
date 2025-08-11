@@ -1,10 +1,52 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useEditorStore } from '@/stores/editorStore';
 import { MediaFile } from '@/types/editor';
 
 export default function Viewer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { project, timeline } = useEditorStore();
+  const [loadedMedia, setLoadedMedia] = useState<Map<string, HTMLImageElement | HTMLVideoElement>>(new Map());
+
+  // Load media elements when project media changes
+  useEffect(() => {
+    if (!project) return;
+
+    const loadMedia = async () => {
+      const mediaMap = new Map<string, HTMLImageElement | HTMLVideoElement>();
+      
+      for (const media of project.media) {
+        try {
+          if (media.type === 'image') {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            await new Promise((resolve, reject) => {
+              img.onload = resolve;
+              img.onerror = reject;
+              img.src = media.src;
+            });
+            mediaMap.set(media.id, img);
+          } else if (media.type === 'video') {
+            const video = document.createElement('video');
+            video.crossOrigin = 'anonymous';
+            video.muted = true;
+            video.preload = 'metadata';
+            await new Promise((resolve, reject) => {
+              video.onloadedmetadata = resolve;
+              video.onerror = reject;
+              video.src = media.src;
+            });
+            mediaMap.set(media.id, video);
+          }
+        } catch (error) {
+          console.warn(`Failed to load media ${media.name}:`, error);
+        }
+      }
+      
+      setLoadedMedia(mediaMap);
+    };
+
+    loadMedia();
+  }, [project?.media]);
 
   useEffect(() => {
     if (!canvasRef.current || !project) return;
@@ -19,7 +61,7 @@ export default function Viewer() {
 
     // Render current frame
     renderFrame(ctx, timeline.currentTime);
-  }, [project, timeline.currentTime]);
+  }, [project, timeline.currentTime, loadedMedia]);
 
   const renderFrame = (ctx: CanvasRenderingContext2D, currentTime: number) => {
     if (!project) return;
@@ -57,7 +99,24 @@ export default function Viewer() {
   };
 
   const renderClip = (ctx: CanvasRenderingContext2D, clip: any, media: MediaFile, sourceTime: number) => {
-    // For now, just render a placeholder
+    const mediaElement = loadedMedia.get(media.id);
+    if (!mediaElement) {
+      // Show loading placeholder
+      ctx.save();
+      const centerX = project!.width / 2;
+      const centerY = project!.height / 2;
+      
+      ctx.translate(centerX, centerY);
+      ctx.fillStyle = '#4a5568';
+      ctx.fillRect(-100, -50, 200, 100);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Loading...', 0, 0);
+      ctx.restore();
+      return;
+    }
+
     ctx.save();
 
     // Apply transform
@@ -69,25 +128,46 @@ export default function Viewer() {
     ctx.scale(clip.transform.scaleX, clip.transform.scaleY);
     ctx.globalAlpha = clip.opacity;
 
-    // Render based on media type
-    if (media.type === 'video') {
-      // Placeholder for video frame
-      ctx.fillStyle = '#4a5568';
-      ctx.fillRect(-media.width! / 2, -media.height! / 2, media.width!, media.height!);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '24px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('Video Frame', 0, 0);
-    } else if (media.type === 'image') {
-      // Placeholder for image
-      ctx.fillStyle = '#2d3748';
-      ctx.fillRect(-100, -100, 200, 200);
-      
+    // Calculate dimensions
+    const mediaWidth = media.width || 100;
+    const mediaHeight = media.height || 100;
+    const renderWidth = mediaWidth;
+    const renderHeight = mediaHeight;
+
+    try {
+      if (media.type === 'video' && mediaElement instanceof HTMLVideoElement) {
+        // Set video time to match timeline
+        const videoTime = Math.max(0, Math.min(sourceTime, media.duration || 0));
+        if (Math.abs(mediaElement.currentTime - videoTime) > 0.1) {
+          mediaElement.currentTime = videoTime;
+        }
+        
+        // Draw video frame
+        ctx.drawImage(
+          mediaElement,
+          -renderWidth / 2,
+          -renderHeight / 2,
+          renderWidth,
+          renderHeight
+        );
+      } else if (media.type === 'image' && mediaElement instanceof HTMLImageElement) {
+        // Draw image
+        ctx.drawImage(
+          mediaElement,
+          -renderWidth / 2,
+          -renderHeight / 2,
+          renderWidth,
+          renderHeight
+        );
+      }
+    } catch (error) {
+      // Fallback to placeholder if rendering fails
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-renderWidth / 2, -renderHeight / 2, renderWidth, renderHeight);
       ctx.fillStyle = '#ffffff';
       ctx.font = '16px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('Image', 0, 0);
+      ctx.fillText('Error', 0, 0);
     }
 
     ctx.restore();
