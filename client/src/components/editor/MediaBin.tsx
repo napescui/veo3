@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useEditorStore } from '@/stores/editorStore';
 import { MediaFile } from '@/types/editor';
+import { IMAGE_DEFAULT_DURATION } from '../../config/media';
 import { 
   Upload, 
   Video, 
@@ -83,7 +84,7 @@ export default function MediaBin() {
         img.onload = () => {
           mediaFile.width = img.naturalWidth;
           mediaFile.height = img.naturalHeight;
-          mediaFile.duration = 5; // Default duration for images
+          mediaFile.duration = IMAGE_DEFAULT_DURATION; // Default duration for images
           resolve(mediaFile);
         };
         img.onerror = reject;

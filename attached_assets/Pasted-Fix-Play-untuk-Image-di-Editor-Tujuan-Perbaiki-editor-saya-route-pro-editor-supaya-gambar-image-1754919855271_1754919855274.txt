@@ -1,0 +1,156 @@
+Fix Play untuk Image di Editor
+Tujuan:
+Perbaiki editor saya (route /pro-editor) supaya gambar (image) bisa diputar di timeline walau tanpa video. Saat ini tombol Play tidak bereaksi karena preview bergantung pada <video>.play() yang butuh sumber video berdurasi.
+Implementasi harus:
+
+memberi durasi default untuk image,
+
+menggunakan timeline clock (requestAnimationFrame) untuk playback,
+
+me-render image ke canvas saat play,
+
+tetap mendukung video & audio seperti biasa,
+
+opsional: fallback “image→video pendek” dengan ffmpeg.wasm.
+
+Stack proyek kemungkinan React/TypeScript + Vite/Next. Deteksi stack dan sesuaikan.
+
+Tugas Utama
+1) Deteksi & Audit
+Cari modul timeline/editor sekarang (komponen Play/Pause, Viewer/Preview, Media Bin).
+
+Identifikasi tempat yang memanggil video.play(); kita akan decouple playback dari <video>.
+
+2) Durasi Default untuk Image
+Tambah konstanta: IMAGE_DEFAULT_DURATION = 5 (detik).
+
+Saat import file ke Media Bin:
+
+Jika file.type.startsWith('image/'), buat MediaItem dengan kind: 'image', src: blobURL, duration: IMAGE_DEFAULT_DURATION.
+
+Jika video, baca durasi dari metadata seperti biasa.
+
+Tambah UI di Inspector: “Image Duration (s)” yang bisa diset per klip.
+
+3) Timeline Clock (global)
+Buat store playback (Zustand/Redux sesuai proyek) dengan state:
+t (seconds), isPlaying, play(), pause(), seek(n), internal rafId, lastTimestamp.
+
+play() → start requestAnimationFrame(tick), pause() → cancel RAF.
+
+Jangan memanggil HTMLVideoElement.play() untuk menggerakkan waktu global.
+
+4) Compositor/Viewer Berbasis Canvas
+Buat komponen Compositor yang:
+
+Menggambar ke <canvas> ukuran project (mis. 1280×720).
+
+Untuk setiap waktu t, query layer aktif (clip yang meliputi t).
+
+Jika layer adalah image: gambar bitmap ke canvas (preload/cache HTMLImageElement).
+
+Jika layer adalah video: gunakan 1 <video muted playsInline> “hidden” per sumber; sinkronkan dengan timeline: set video.currentTime = localTime (tanpa .play()), lalu drawImage(video, …) ke canvas.
+
+Pertahankan transform, scale to fit/pad, opacity, dll jika sudah ada.
+
+5) Sinkronisasi Audio
+Jika ada audio track, boleh tetap pakai <audio> terpisah:
+
+Saat play(), set audio.currentTime = t lalu .play().
+
+Saat pause(), .pause().
+
+Saat seek(), update audio.currentTime.
+
+Kalau belum ada audio engine, lewati (tidak wajib untuk bug ini) tapi jangan memblokir Play.
+
+6) Fallback Opsional: Image → Video 5s (ffmpeg.wasm)
+Tambah util stillToMp4(imageBlobURL, duration=5) berbasis @ffmpeg/ffmpeg.
+
+Toggle melalui env/config IMAGE_TO_VIDEO_FALLBACK=true|false.
+
+Jika true: saat user menaruh image ke timeline, otomatis bungkus jadi mp4 durasi clip.duration agar mesin lama yang video-only tetap kompatibel.
+
+7) Export Tidak Berubah
+Render server (FFmpeg native) tetap berjalan seperti sebelumnya; untuk image, gunakan filter tpad/loop/fps saat final render sesuai pipeline proyek.
+
+8) UX & Guardrails
+Tampilkan badge kecil “Still • 5s” pada clip image.
+
+Spacebar = play/pause; playhead bergerak walau komposisi hanya image.
+
+Project duration = max(clip.end) semua track.
+
+Perubahan Kode (arah dan nama boleh disesuaikan)
+src/config/media.ts → export const IMAGE_DEFAULT_DURATION = 5;
+
+src/utils/fileToMedia.(ts|tsx) → set kind, duration untuk image.
+
+src/state/playback.ts → store timeline clock (RAF).
+
+src/components/Viewer/Compositor.tsx → canvas + sinkronisasi video via currentTime.
+
+src/components/Inspector/ImagePanel.tsx → input durasi image.
+
+src/utils/stillToVideo.ts (opsional) → ffmpeg.wasm fallback.
+
+Wire up tombol Play/Pause untuk memakai playback.play()/pause().
+
+Acceptance Criteria (WAJIB)
+Kasus 1 — hanya 1 image di timeline
+
+Tekan Play → playhead bergerak, canvas menampilkan gambar selama ≥5 detik (atau nilai durasi di Inspector).
+
+Space/Pause bekerja.
+
+Kasus 2 — image + video berurutan
+
+Play dari awal → image tampil dulu, kemudian transisi ke video tanpa freeze.
+
+Seek ke tengah image/video tetap akurat.
+
+Kasus 3 — tanpa audio
+
+Tidak ada error, Play tetap berjalan.
+
+Kasus 4 — dengan audio (jika ada)
+
+Audio sinkron setelah play/pause/seek (margin ±50ms).
+
+Tidak ada error di console; build & preview di Replit sukses.
+
+Catatan Implementasi
+Preload cache untuk image agar tidak re-create new Image() setiap frame.
+
+Gunakan scale=… pad=… setsar=1 saat render final agar framing konsisten.
+
+Jangan menambah tracker/pixel.
+
+Commit per langkah:
+
+feat(playback): add timeline clock
+
+feat(media): default duration for images
+
+feat(viewer): canvas compositor with image support
+
+feat(fallback): optional image->mp4 via ffmpeg.wasm
+
+chore: inspector for image duration
+
+Output yang Diharapkan
+PR/branch dengan perubahan di atas, semua acceptance pass.
+
+README singkat “Image Playback Support” + cara toggle fallback ffmpeg.wasm.
+
+Kalau ada bagian yang tidak cocok dengan struktur repo, adaptasikan nama file/komponen tapi tetap capai Acceptance Criteria.
+
+
+
+
+
+
+
+
+
+Ask ChatGPT

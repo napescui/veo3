@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useEditorStore } from "@/stores/editorStore";
+import { usePlaybackStore } from "../state/playback";
 import Timeline from "@/components/editor/Timeline";
 import MediaBin from "@/components/editor/MediaBin";
 import Viewer from "@/components/editor/Viewer";
@@ -38,23 +39,32 @@ export default function ProEditor() {
   
   const {
     project,
-    timeline,
-    setPlaying,
-    setCurrentTime,
     selectedClips
   } = useEditorStore();
 
+  const {
+    isPlaying,
+    currentTime,
+    play,
+    pause,
+    stop,
+    seek
+  } = usePlaybackStore();
+
   const handlePlayPause = () => {
-    setPlaying(!timeline.isPlaying);
+    if (isPlaying) {
+      pause();
+    } else {
+      play();
+    }
     toast({
-      title: timeline.isPlaying ? "Paused" : "Playing",
-      description: `Video ${timeline.isPlaying ? "paused" : "started playing"}`
+      title: isPlaying ? "Paused" : "Playing",
+      description: `Video ${isPlaying ? "paused" : "started playing"}`
     });
   };
 
   const handleStop = () => {
-    setPlaying(false);
-    setCurrentTime(0);
+    stop();
     toast({
       title: "Stopped",
       description: "Video playback stopped"
@@ -146,23 +156,28 @@ export default function ProEditor() {
                   <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
                     JrennGenerator Pro
                   </h1>
-                  <p className="text-xs text-slate-400">{project.name}</p>
+                  <p className="text-xs text-slate-400">{project?.name || 'Untitled Project'}</p>
                 </div>
               </motion.a>
             </div>
             
             {/* Playback Controls */}
             <div className="flex items-center space-x-2">
-              <Button size="sm" variant="ghost" onClick={() => setCurrentTime(0)}>
+              <Button size="sm" variant="ghost" onClick={() => seek(0)}>
                 <SkipBack className="w-4 h-4" />
               </Button>
               <Button size="sm" onClick={handlePlayPause} className="bg-purple-600 hover:bg-purple-700">
-                {timeline.isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               </Button>
               <Button size="sm" variant="ghost" onClick={handleStop}>
                 <Square className="w-4 h-4" />
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setCurrentTime(project.duration)}>
+              <Button size="sm" variant="ghost" onClick={() => {
+                const projectDuration = project?.tracks
+                  .flatMap(track => track.clips)
+                  .reduce((max, clip) => Math.max(max, clip.endTime), 0) || 0;
+                seek(projectDuration);
+              }}>
                 <SkipForward className="w-4 h-4" />
               </Button>
               
@@ -303,7 +318,7 @@ export default function ProEditor() {
             <Viewer />
             
             {/* Playback Indicator */}
-            {!timeline.isPlaying && (
+            {!isPlaying && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}

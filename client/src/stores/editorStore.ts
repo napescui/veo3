@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { Project, TimelineState, ViewerState, Track, Clip, MediaFile } from '@/types/editor';
+import { createTestProject } from '../utils/testData';
 
 interface EditorState {
   // Project
@@ -40,49 +41,8 @@ interface EditorState {
   setOutPoint: (time?: number) => void;
 }
 
-const defaultProject: Project = {
-  id: 'new-project',
-  name: 'Untitled Project',
-  version: 1,
-  fps: 30,
-  width: 1920,
-  height: 1080,
-  duration: 0,
-  tracks: [
-    {
-      id: 'v1',
-      type: 'video',
-      name: 'Video 1',
-      locked: false,
-      muted: false,
-      solo: false,
-      height: 80,
-      clips: []
-    },
-    {
-      id: 'a1',
-      type: 'audio',
-      name: 'Audio 1',
-      locked: false,
-      muted: false,
-      solo: false,
-      height: 60,
-      clips: []
-    }
-  ],
-  media: [],
-  effects: [],
-  transitions: [],
-  markers: [],
-  settings: {
-    previewQuality: 'half',
-    snapEnabled: true,
-    rippleDelete: false,
-    magneticTimeline: true
-  },
-  createdAt: new Date(),
-  updatedAt: new Date()
-};
+// Use test project with sample images for demonstration
+const defaultProject: Project = createTestProject();
 
 const defaultTimeline: TimelineState = {
   currentTime: 0,

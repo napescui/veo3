@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useEditorStore } from '@/stores/editorStore';
+import { usePlaybackStore } from '../../state/playback';
 import { Clip, Track } from '@/types/editor';
 import { formatTimecode } from '@/utils/timecode';
 
@@ -15,9 +16,7 @@ export default function Timeline() {
 
   const {
     project,
-    timeline,
     selectedClips,
-    setCurrentTime,
     setZoom,
     selectClip,
     updateClip,
@@ -25,7 +24,15 @@ export default function Timeline() {
     clearSelection
   } = useEditorStore();
 
-  const PIXELS_PER_SECOND = 50 * timeline.zoom;
+  const {
+    currentTime,
+    isPlaying,
+    seek,
+    play,
+    pause
+  } = usePlaybackStore();
+
+  const PIXELS_PER_SECOND = 50 * 1; // Default zoom, can be made dynamic later
   const TRACK_HEIGHT = 80;
   const RULER_HEIGHT = 40;
 
@@ -33,10 +40,10 @@ export default function Timeline() {
     if (!containerRef.current) return;
     
     const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left + timeline.scrollX;
+    const x = e.clientX - rect.left;
     const time = x / PIXELS_PER_SECOND;
     
-    setCurrentTime(Math.max(0, time));
+    seek(Math.max(0, time));
   };
 
   const handleClipMouseDown = (e: React.MouseEvent, clip: Clip) => {
@@ -101,7 +108,7 @@ export default function Timeline() {
       case 'S':
         if (selectedClips.length > 0) {
           selectedClips.forEach(clipId => {
-            splitClip(clipId, timeline.currentTime);
+            splitClip(clipId, currentTime);
           });
         }
         break;
@@ -111,7 +118,11 @@ export default function Timeline() {
         break;
       case ' ':
         e.preventDefault();
-        // Toggle play/pause
+        if (isPlaying) {
+          pause();
+        } else {
+          play();
+        }
         break;
     }
   };
@@ -119,7 +130,7 @@ export default function Timeline() {
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedClips, timeline.currentTime]);
+  }, [selectedClips, currentTime, isPlaying, play, pause]);
 
   if (!project) return null;
 
@@ -132,7 +143,7 @@ export default function Timeline() {
       <div className="bg-slate-800 border-b border-slate-700" style={{ height: RULER_HEIGHT }}>
         <div 
           className="relative h-full"
-          style={{ width: timelineWidth, marginLeft: -timeline.scrollX }}
+          style={{ width: timelineWidth, marginLeft: 0 }}
         >
           {/* Time markers */}
           {Array.from({ length: Math.ceil(timelineDuration) + 1 }, (_, i) => (
@@ -151,7 +162,7 @@ export default function Timeline() {
           <div
             className="absolute top-0 w-px bg-red-500 z-20 pointer-events-none"
             style={{ 
-              left: timeline.currentTime * PIXELS_PER_SECOND,
+              left: currentTime * PIXELS_PER_SECOND,
               height: '100vh'
             }}
           >
@@ -188,14 +199,14 @@ export default function Timeline() {
                 </div>
                 <div className="flex gap-1">
                   <button 
-                    className={`w-6 h-6 rounded text-xs ${track.muted ? 'bg-red-600' : 'bg-slate-600'}`}
-                    onClick={() => updateTrack(track.id, { muted: !track.muted })}
+                    className="w-6 h-6 rounded text-xs bg-slate-600 hover:bg-slate-500"
+                    onClick={() => {}} // Track controls will be implemented later
                   >
                     M
                   </button>
                   <button 
-                    className={`w-6 h-6 rounded text-xs ${track.solo ? 'bg-yellow-600' : 'bg-slate-600'}`}
-                    onClick={() => updateTrack(track.id, { solo: !track.solo })}
+                    className="w-6 h-6 rounded text-xs bg-slate-600 hover:bg-slate-500"
+                    onClick={() => {}} // Track controls will be implemented later
                   >
                     S
                   </button>
@@ -253,11 +264,11 @@ export default function Timeline() {
             min="0.1"
             max="5"
             step="0.1"
-            value={timeline.zoom}
+            value={1}
             onChange={(e) => setZoom(parseFloat(e.target.value))}
             className="w-20"
           />
-          <span className="text-xs text-slate-400">{timeline.zoom.toFixed(1)}x</span>
+          <span className="text-xs text-slate-400">1.0x</span>
         </div>
         
         <button
@@ -270,7 +281,7 @@ export default function Timeline() {
         <div className="flex-1" />
         
         <div className="text-sm text-slate-300">
-          {formatTimecode(timeline.currentTime, project.fps)} / {formatTimecode(project.duration, project.fps)}
+          {formatTimecode(currentTime, project.fps)} / {formatTimecode(project.duration, project.fps)}
         </div>
       </div>
     </div>
