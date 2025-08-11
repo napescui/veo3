@@ -10,15 +10,75 @@ import { useToast } from "@/hooks/use-toast";
 import StatusDisplay from "./status-display";
 import VideoResult from "./video-result";
 import ErrorDisplay from "./error-display";
-import VideoQueue from "./video-queue";
+import VideoTotal from "./video-total";
 import type { Video } from "@shared/schema";
 
-const EXAMPLE_PROMPTS = [
-  "A cat playing piano in a cozy room",
-  "Spiderman dancing on a rooftop",
-  "Ocean waves crashing against cliffs",
-  "A majestic eagle soaring through mountain peaks at sunset"
-];
+// Dynamic example prompts based on user patterns
+const getDynamicExamplePrompts = (videos: Video[]) => {
+  // Analyze user's previous prompts to generate relevant examples
+  const userPrompts = videos.map(v => v.prompt.toLowerCase());
+  
+  // Check for common themes
+  const hasLego = userPrompts.some(p => p.includes('lego'));
+  const hasAnimal = userPrompts.some(p => p.includes('cat') || p.includes('dog') || p.includes('animal'));
+  const hasSuperhero = userPrompts.some(p => p.includes('spiderman') || p.includes('batman') || p.includes('superhero'));
+  const hasNature = userPrompts.some(p => p.includes('ocean') || p.includes('mountain') || p.includes('forest'));
+  const hasCartoon = userPrompts.some(p => p.includes('cartoon') || p.includes('anime') || p.includes('lucu'));
+  
+  // Generate recommendations based on user patterns
+  if (hasLego) {
+    return [
+      "Lego minifigure building a colorful castle",
+      "Lego car racing through a brick city",
+      "Lego spaceship exploring alien planets",
+      "Lego characters having a fun party"
+    ];
+  }
+  
+  if (hasCartoon) {
+    return [
+      "Cute cartoon character dancing happily",
+      "Colorful cartoon animals playing together",
+      "Cartoon superhero saving the day",
+      "Funny cartoon chef cooking delicious food"
+    ];
+  }
+  
+  if (hasAnimal) {
+    return [
+      "Cute kitten playing with colorful yarn balls",
+      "Friendly dog running in a beautiful park",
+      "Majestic lion roaring at sunset",
+      "Playful dolphins jumping in ocean waves"
+    ];
+  }
+  
+  if (hasSuperhero) {
+    return [
+      "Superman flying through city skyline",
+      "Batman fighting crime in Gotham City",
+      "Wonder Woman using her golden lasso",
+      "Iron Man testing his new armor technology"
+    ];
+  }
+  
+  if (hasNature) {
+    return [
+      "Peaceful waterfall in tropical rainforest",
+      "Sunrise over mountain peaks with clouds",
+      "Cherry blossoms falling in spring breeze",
+      "Northern lights dancing in starry sky"
+    ];
+  }
+  
+  // Default prompts if no specific pattern detected
+  return [
+    "A cat playing piano in a cozy room",
+    "Spiderman dancing on a rooftop",  
+    "Ocean waves crashing against cliffs",
+    "A majestic eagle soaring through mountain peaks at sunset"
+  ];
+};
 
 export default function VideoGenerator() {
   const [prompt, setPrompt] = useState("");
@@ -26,6 +86,9 @@ export default function VideoGenerator() {
   const [videos, setVideos] = useState<Video[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Get dynamic example prompts based on user's previous videos
+  const examplePrompts = getDynamicExamplePrompts(videos);
 
   // Enhance prompt mutation
   const enhancePromptMutation = useMutation({
@@ -61,7 +124,7 @@ export default function VideoGenerator() {
       return response.json() as Promise<Video & { wasTranslated?: boolean }>;
     },
     onSuccess: (video) => {
-      setVideos(prev => [video, ...prev].slice(0, 10)); // Keep only last 10
+      setVideos(prev => [video, ...prev]); // Keep all videos - unlimited
       if (video.wasTranslated) {
         toast({
           title: "Video dimulai",
@@ -130,15 +193,7 @@ export default function VideoGenerator() {
       return;
     }
 
-    const processingCount = videos.filter(v => v.status === "processing").length;
-    if (processingCount >= 10) {
-      toast({
-        title: "Queue penuh",
-        description: "Maksimal 10 video dapat diproses bersamaan. Tunggu sampai ada yang selesai.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // No limit on video generation - unlimited processing
 
     generateVideo.mutate(prompt);
   };
@@ -168,7 +223,7 @@ export default function VideoGenerator() {
 
   const processingCount = videos.filter(v => v.status === "processing").length;
   const isGenerating = generateVideo.isPending;
-  const canGenerate = processingCount < 10;
+  const canGenerate = true; // Always allow generation - unlimited
 
   return (
     <div className="space-y-8">
@@ -201,7 +256,7 @@ export default function VideoGenerator() {
         <div className="mb-6">
           <p className="text-sm text-slate-400 mb-3">Try these examples:</p>
           <div className="flex flex-wrap gap-2">
-            {EXAMPLE_PROMPTS.map((example, index) => (
+            {examplePrompts.map((example, index) => (
               <Button
                 key={index}
                 variant="outline"
@@ -242,7 +297,7 @@ export default function VideoGenerator() {
             </div>
             <div className="flex items-center space-x-2">
               <Film className="w-4 h-4 text-slate-400" />
-              <span className="text-sm text-slate-400">Queue: {processingCount}/10</span>
+              <span className="text-sm text-slate-400">Total: {videos.length}</span>
             </div>
           </div>
           
@@ -280,7 +335,7 @@ export default function VideoGenerator() {
 
       {/* Video Queue */}
       {videos.length > 0 && (
-        <VideoQueue videos={videos} />
+        <VideoTotal videos={videos} />
       )}
     </div>
   );
