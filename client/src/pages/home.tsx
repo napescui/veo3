@@ -53,11 +53,10 @@ export default function Home() {
   };
 
   const handleStartFree = () => {
-    if (isAuthenticated) {
-      setShowGenerator(true);
-    } else {
+    if (!isAuthenticated) {
       setShowAuth(true);
     }
+    // If authenticated, video generator is already shown at top
   };
 
   return (
@@ -187,6 +186,36 @@ export default function Home() {
         </div>
       </motion.header>
 
+      {/* Video Generator Section At Top - Only Show When Authenticated */}
+      {isAuthenticated && (
+        <motion.section 
+          className="py-8 md:py-12 px-4 sm:px-6 lg:px-8 bg-black/20 backdrop-blur-sm border-b border-white/10"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <div className="max-w-4xl mx-auto">
+            <motion.div 
+              className="text-center mb-6 md:mb-8"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                Create Your First Video
+              </h2>
+              <p className="text-slate-300 text-base md:text-lg">
+                Enter your prompt below and watch the magic happen
+              </p>
+            </motion.div>
+            
+            <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm rounded-3xl border border-slate-600/50 p-4 md:p-6 shadow-2xl">
+              <VideoGenerator />
+            </div>
+          </div>
+        </motion.section>
+      )}
+
       {/* Hero Section - Fully Responsive */}
       <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 md:py-0">
         <motion.div style={{ y, opacity }} className="w-full">
@@ -241,28 +270,8 @@ export default function Home() {
                   No editing skills required - just your imagination.
                 </motion.p>
 
-                {/* CREATE YOUR FIRST VIDEO SECTION - MOVED TO TOP */}
-                {isAuthenticated ? (
-                  <motion.div 
-                    className="mb-12 md:mb-16"
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1, delay: 1 }}
-                  >
-                    <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm rounded-3xl border border-slate-600/50 p-6 md:p-8 shadow-2xl">
-                      <div className="text-center mb-6">
-                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                          Create Your First Video
-                        </h2>
-                        <p className="text-slate-300 text-lg">
-                          Enter your prompt below and watch the magic happen
-                        </p>
-                      </div>
-                      
-                      <VideoGenerator />
-                    </div>
-                  </motion.div>
-                ) : (
+                {/* SHOW LOGIN BUTTON ONLY WHEN NOT AUTHENTICATED */}
+                {!isAuthenticated && (
                   <motion.div 
                     className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center lg:justify-start items-center mb-12 md:mb-16"
                     initial={{ opacity: 0, y: 30 }}
@@ -625,38 +634,8 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Video Generator Section - Responsive */}
-      <AnimatePresence>
-        {showGenerator && (
-          <motion.section 
-            className="py-12 md:py-20 px-4 sm:px-6 lg:px-8 bg-black/20 backdrop-blur-sm"
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            transition={{ duration: 0.8 }}
-            id="generator"
-          >
-            <div className="max-w-4xl mx-auto">
-              <motion.div 
-                className="text-center mb-8 md:mb-12"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Create Your First Video
-                </h2>
-                <p className="text-base md:text-xl text-slate-300">
-                  Enter your prompt below and watch the magic happen
-                </p>
-              </motion.div>
-              <VideoGenerator />
-            </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
-
-      {!showGenerator && (
+      {/* Features Section - Only show when not authenticated or as additional info */}
+      {!isAuthenticated && (
         <motion.div 
           className="text-center py-6 md:py-8"
           initial={{ opacity: 0 }}
@@ -664,7 +643,7 @@ export default function Home() {
           transition={{ delay: 1.5 }}
         >
           <Button
-            onClick={() => setShowGenerator(true)}
+            onClick={handleStartFree}
             variant="ghost"
             className="text-cyan-400 hover:text-cyan-300 animate-bounce text-sm md:text-base"
             data-testid="button-try-now"

@@ -81,6 +81,12 @@ Preferred communication style: Simple, everyday language.
 
 **Migration to Standard Replit**: Successfully migrated from Replit Agent to standard Replit environment with proper PostgreSQL database integration and all dependencies configured.
 
+**Duplicate Prompt Detection**: Added intelligent duplicate prompt detection that shows confirmation dialog when users try to generate videos with identical prompts from their history.
+
+**Top-Priority Video Generator**: Moved the video generation interface to the very top of the homepage (above logo and marketing content) so authenticated users can immediately start creating videos without scrolling. This improves user experience by eliminating the need to scroll down to access the main functionality.
+
+**Enhanced Concurrent Video Processing**: Removed blocking restrictions - users can now generate multiple videos simultaneously without waiting for previous videos to complete processing. Only duplicate requests during the actual submission process are prevented to avoid server overload.
+
 ## External Dependencies
 
 - **Database**: Neon PostgreSQL serverless database with connection pooling

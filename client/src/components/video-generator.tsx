@@ -177,6 +177,17 @@ export default function VideoGenerator() {
       return;
     }
 
+    // Check for duplicate prompts
+    const duplicateVideo = videos.find(v => v.prompt.toLowerCase().trim() === prompt.toLowerCase().trim());
+    if (duplicateVideo) {
+      const confirmed = window.confirm(
+        `Anda sudah pernah membuat video dengan prompt yang sama:\n\n"${prompt}"\n\nApakah Anda yakin ingin membuat video baru dengan prompt yang sama?`
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
     // Allow multiple video generation - users can generate multiple videos simultaneously
     // Only check if current request is still being sent to prevent duplicate requests
     if (generateVideo.isPending) {
