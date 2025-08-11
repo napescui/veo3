@@ -110,6 +110,8 @@ Preferred communication style: Simple, everyday language.
 
 **SEO & Technical Compliance**: Created sitemap.xml, robots.txt, and implemented proper meta tags, structured navigation, and search engine optimization for all legal and help pages.
 
+**Complete Architecture Transformation - Video Merger Tool**: Completely replaced the complex video editor with a simple 2-video merge interface. Users now upload two videos, click merge, and receive the combined result processed server-side using FFmpeg. This fundamental change transforms the application from a complex client-side editor to a streamlined server-side video processing tool.
+
 ## External Dependencies
 
 - **Database**: Neon PostgreSQL serverless database with connection pooling
