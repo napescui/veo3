@@ -177,12 +177,12 @@ export default function VideoGenerator() {
       return;
     }
 
-    // Check if any video is currently processing
-    const isAnyProcessing = videos.some(v => v.status === "processing");
-    if (isAnyProcessing) {
+    // Allow multiple video generation - users can generate multiple videos simultaneously
+    // Only check if current request is still being sent to prevent duplicate requests
+    if (generateVideo.isPending) {
       toast({
         title: "Tunggu sebentar",
-        description: "Harap tunggu video sebelumnya selesai dulu sebelum generate yang baru.",
+        description: "Request sedang dikirim, harap tunggu sebentar.",
         variant: "destructive",
       });
       return;
@@ -216,21 +216,14 @@ export default function VideoGenerator() {
 
   const processingCount = videos.filter(v => v.status === "processing").length;
   const isGenerating = generateVideo.isPending;
-  const isAnyProcessing = videos.some(v => v.status === "processing");
-  const canGenerate = !isGenerating && !isAnyProcessing; // Only allow if nothing is generating/processing
+  const canGenerate = !isGenerating; // Allow multiple videos to be generated simultaneously
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Video Generation Interface */}
-      <div className="bg-surface/80 backdrop-blur-sm rounded-2xl border border-slate-700 p-8">
+      <div className="space-y-4">
         {/* Prompt Input */}
-        <div className="mb-6">
-          <label htmlFor="prompt" className="block text-sm font-medium text-slate-300 mb-3">
-            <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-            Describe your video
-          </label>
+        <div className="mb-4">
           <div className="relative">
             <Textarea
               id="prompt"
@@ -239,21 +232,20 @@ export default function VideoGenerator() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  // Only generate if no videos are currently processing
-                  const isAnyProcessing = videos.some(v => v.status === "processing");
-                  if (!isAnyProcessing && !isGenerating) {
+                  // Allow Enter key to generate - multiple videos can be processed simultaneously
+                  if (!isGenerating) {
                     handleGenerate();
                   } else {
                     toast({
                       title: "Tunggu sebentar",
-                      description: "Harap tunggu video sebelumnya selesai dulu sebelum generate yang baru.",
+                      description: "Request sedang dikirim, harap tunggu sebentar.",
                       variant: "destructive",
                     });
                   }
                 }
               }}
               placeholder="A majestic eagle soaring through mountain peaks at sunset... (Press Enter to generate)"
-              className="w-full h-32 px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-accent placeholder-slate-500 focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none transition-all duration-200"
+              className="w-full h-24 px-4 py-3 bg-slate-900/70 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 resize-none transition-all duration-200 backdrop-blur-sm"
               maxLength={500}
             />
             <div className="absolute bottom-3 right-3 text-sm text-slate-500">
@@ -263,65 +255,60 @@ export default function VideoGenerator() {
         </div>
 
         {/* Example Prompts */}
-        <div className="mb-6">
+        <div className="mb-4">
           <p className="text-sm text-slate-400 mb-3">Try these examples:</p>
           <div className="flex flex-wrap gap-2">
-            {Array.isArray(examplePrompts) && examplePrompts.length > 0 ? examplePrompts.map((example, index) => (
+            {Array.isArray(examplePrompts) && examplePrompts.length > 0 ? examplePrompts.slice(0, 4).map((example, index) => (
               <Button
                 key={index}
                 variant="outline"
                 size="sm"
                 onClick={() => handlePromptExample(example)}
-                className="px-3 py-2 bg-slate-800/50 hover:bg-slate-700 border-slate-600 text-sm"
+                className="px-3 py-1.5 bg-slate-800/60 hover:bg-slate-700/80 border-slate-600/50 text-xs backdrop-blur-sm transition-all duration-200 hover:border-purple-500/50"
                 disabled={!canGenerate}
               >
-                {example}
+                {example.length > 30 ? `${example.substring(0, 30)}...` : example}
               </Button>
             )) : (
               // Show default prompts while loading
-              ["A cat playing piano in a cozy room", "Spiderman dancing on a rooftop", "Ocean waves crashing against cliffs", "A majestic eagle soaring through mountain peaks at sunset"].map((example, index) => (
+              ["A cat playing piano in a cozy room", "Spiderman dancing on a rooftop", "Ocean waves crashing against cliffs", "A majestic eagle soaring through mountain peaks at sunset"].slice(0, 4).map((example, index) => (
                 <Button
                   key={index}
                   variant="outline"
                   size="sm"
                   onClick={() => handlePromptExample(example)}
-                  className="px-3 py-2 bg-slate-800/50 hover:bg-slate-700 border-slate-600 text-sm"
+                  className="px-3 py-1.5 bg-slate-800/60 hover:bg-slate-700/80 border-slate-600/50 text-xs backdrop-blur-sm transition-all duration-200 hover:border-purple-500/50"
                   disabled={!canGenerate}
                 >
-                  {example}
+                  {example.length > 30 ? `${example.substring(0, 30)}...` : example}
                 </Button>
               ))
             )}
           </div>
         </div>
 
-        {/* Settings */}
-        <div className="mb-6 space-y-4">
-          <div className="flex items-center justify-between">
+        {/* Settings & Controls Row */}
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
             <div className="flex items-center space-x-2">
               <Switch
                 id="auto-translate"
                 checked={autoTranslate}
                 onCheckedChange={setAutoTranslate}
+                className="scale-75"
               />
-              <Label htmlFor="auto-translate" className="text-sm text-slate-300 flex items-center gap-2">
-                <Languages className="w-4 h-4" />
-                Auto-translate Indonesian to English
+              <Label htmlFor="auto-translate" className="text-xs text-slate-400 flex items-center gap-1">
+                <Languages className="w-3 h-3" />
+                Auto-translate
               </Label>
             </div>
-          </div>
-        </div>
-
-        {/* Generation Controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-slate-400" />
-              <span className="text-sm text-slate-400">Duration: 8 seconds</span>
+            <div className="flex items-center space-x-1">
+              <Clock className="w-3 h-3" />
+              <span className="text-xs">8s duration</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Film className="w-4 h-4 text-slate-400" />
-              <span className="text-sm text-slate-400">Total: {videos.length}</span>
+            <div className="flex items-center space-x-1">
+              <Film className="w-3 h-3" />
+              <span className="text-xs">{videos.length} videos</span>
             </div>
           </div>
           
@@ -331,25 +318,25 @@ export default function VideoGenerator() {
               disabled={enhancePromptMutation.isPending || !prompt.trim()}
               variant="outline"
               size="sm"
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border-slate-600"
+              className="px-3 py-2 bg-slate-800/60 hover:bg-slate-700/80 border-slate-600/50 text-xs backdrop-blur-sm transition-all duration-200 hover:border-cyan-500/50"
             >
               {enhancePromptMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
               ) : (
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Sparkles className="w-3 h-3 mr-1" />
               )}
               Enhance
             </Button>
             
             <Button
               onClick={handleGenerate}
-              disabled={isGenerating || !canGenerate}
-              className="bg-gradient-to-r from-primary to-secondary hover:from-indigo-600 hover:to-purple-600 px-8 py-3 rounded-xl font-semibold transition-all duration-200"
+              disabled={!canGenerate}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold transition-all duration-200 text-sm shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40"
             >
               {isGenerating ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
               ) : (
-                <Play className="w-4 h-4 mr-2" />
+                <Play className="w-3 h-3 mr-2" />
               )}
               {isGenerating ? "Generating..." : "Generate Video"}
             </Button>

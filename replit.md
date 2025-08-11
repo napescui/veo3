@@ -75,6 +75,12 @@ Preferred communication style: Simple, everyday language.
 
 **AI-Enhanced User Experience**: Integrates Gemini 2.5 Flash for intelligent prompt enhancement and automatic language translation to improve video generation quality.
 
+**Concurrent Video Processing**: Allows users to generate multiple videos simultaneously without blocking, supporting high-throughput video creation with real-time status updates.
+
+**Enhanced User Interface**: Moved video generation interface to the top of the homepage with improved design, compact layout, and Enter key support for quick video generation.
+
+**Migration to Standard Replit**: Successfully migrated from Replit Agent to standard Replit environment with proper PostgreSQL database integration and all dependencies configured.
+
 ## External Dependencies
 
 - **Database**: Neon PostgreSQL serverless database with connection pooling

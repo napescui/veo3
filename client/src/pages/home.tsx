@@ -241,32 +241,54 @@ export default function Home() {
                   No editing skills required - just your imagination.
                 </motion.p>
 
-                {/* START FREE BUTTON - MOVED TO TOP AS REQUESTED */}
-                <motion.div 
-                  className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center lg:justify-start items-center mb-12 md:mb-16"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1, delay: 1 }}
-                >
-                  <Button
-                    onClick={handleStartFree}
-                    className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 md:px-12 py-4 md:py-6 text-lg md:text-xl font-bold rounded-2xl shadow-lg shadow-purple-500/25 transition-all duration-300 hover:shadow-purple-500/40 hover:scale-105 transform"
-                    size="lg"
-                    data-testid="button-start-free"
+                {/* CREATE YOUR FIRST VIDEO SECTION - MOVED TO TOP */}
+                {isAuthenticated ? (
+                  <motion.div 
+                    className="mb-12 md:mb-16"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1, delay: 1 }}
                   >
-                    <Play className="w-5 h-5 md:w-6 md:h-6 mr-3" />
-                    {isAuthenticated ? "Start Creating Free" : "Start Free"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full sm:w-auto border-2 border-white/20 text-white hover:bg-white/10 px-6 md:px-8 py-3 md:py-4 text-base md:text-lg font-semibold rounded-xl backdrop-blur-sm transition-all duration-300"
-                    size="lg"
-                    data-testid="button-watch-demo"
+                    <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm rounded-3xl border border-slate-600/50 p-6 md:p-8 shadow-2xl">
+                      <div className="text-center mb-6">
+                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                          Create Your First Video
+                        </h2>
+                        <p className="text-slate-300 text-lg">
+                          Enter your prompt below and watch the magic happen
+                        </p>
+                      </div>
+                      
+                      <VideoGenerator />
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center lg:justify-start items-center mb-12 md:mb-16"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1, delay: 1 }}
                   >
-                    <Video className="w-4 h-4 md:w-5 md:h-5 mr-2" />
-                    Watch Demo
-                  </Button>
-                </motion.div>
+                    <Button
+                      onClick={handleStartFree}
+                      className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 md:px-12 py-4 md:py-6 text-lg md:text-xl font-bold rounded-2xl shadow-lg shadow-purple-500/25 transition-all duration-300 hover:shadow-purple-500/40 hover:scale-105 transform"
+                      size="lg"
+                      data-testid="button-start-free"
+                    >
+                      <Play className="w-5 h-5 md:w-6 md:h-6 mr-3" />
+                      Start Free
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto border-2 border-white/20 text-white hover:bg-white/10 px-6 md:px-8 py-3 md:py-4 text-base md:text-lg font-semibold rounded-xl backdrop-blur-sm transition-all duration-300"
+                      size="lg"
+                      data-testid="button-watch-demo"
+                    >
+                      <Video className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                      Watch Demo
+                    </Button>
+                  </motion.div>
+                )}
               </div>
 
               {/* Right Content - Real Robot Video with Scroll Effects */}
