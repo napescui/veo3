@@ -17,7 +17,7 @@ export default function CustomerService() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hello! I\'m your AI assistant for Veo3 Lite. How can I help you today?',
+      content: 'Hello! I\'m your AI assistant for JrennGenerator. How can I help you today?',
       sender: 'bot',
       timestamp: new Date()
     }

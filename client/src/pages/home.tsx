@@ -110,7 +110,7 @@ export default function Home() {
                 <Video className="text-white text-base md:text-xl" />
               </div>
               <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent font-space-grotesk">
-                Veo3 Lite
+                JrennGenerator
               </h1>
             </motion.div>
             
@@ -202,10 +202,10 @@ export default function Home() {
               transition={{ delay: 0.3 }}
             >
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                Create Your First Video
+                Buat Video Pertama Anda
               </h2>
               <p className="text-slate-300 text-base md:text-lg">
-                Enter your prompt below and watch the magic happen
+                Masukkan prompt Anda di bawah ini dan saksikan keajaiban teknologi AI mengubah ide menjadi video profesional
               </p>
             </motion.div>
             
@@ -243,7 +243,7 @@ export default function Home() {
                     transition={{ duration: 4, repeat: Infinity }}
                   >
                     <Sparkles className="w-3 h-3 md:w-4 md:h-4 text-yellow-400 mr-2" />
-                    <span className="text-xs md:text-sm font-medium">Powered by Advanced AI Technology</span>
+                    <span className="text-xs md:text-sm font-medium">Didukung Teknologi AI Canggih</span>
                   </motion.div>
                 </motion.div>
 
@@ -266,8 +266,8 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1, delay: 0.8 }}
                 >
-                  Create professional <span className="text-cyan-400 font-semibold">8-second videos</span> from simple text prompts using cutting-edge AI. 
-                  No editing skills required - just your imagination.
+                  Buat video profesional <span className="text-cyan-400 font-semibold">8 detik</span> dari prompt teks sederhana menggunakan AI terdepan. 
+                  Tidak perlu skill editing - cukup imajinasi Anda. Dukung bahasa Indonesia dan otomatis diterjemahkan untuk hasil optimal.
                 </motion.p>
 
                 {/* SHOW LOGIN BUTTON ONLY WHEN NOT AUTHENTICATED */}
