@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Initialize Gemini AI with API key
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+// Initialize Gemini AI with hardcoded API key
+const ai = new GoogleGenAI({ apiKey: "AIzaSyBreoZhTVNwNNDqviHS__RDJPRpCP-pvlc" });
 
 export async function enhancePrompt(text: string): Promise<string> {
   try {
@@ -73,5 +73,36 @@ Respond only with 'id' for Indonesian or 'en' for English, nothing else.`;
   } catch (error) {
     console.error("Failed to detect language:", error);
     return 'en'; // Default to English
+  }
+}
+
+// Customer service chatbot function
+export async function handleChatbotQuery(query: string): Promise<string> {
+  try {
+    const systemPrompt = `You are a helpful customer service assistant for VideoAI, an AI-powered video generation platform.
+    
+Key information about VideoAI:
+- We transform text prompts into professional 8-second videos using advanced AI
+- We support both Indonesian and English prompts (auto-translated)
+- Users can generate up to 10 videos simultaneously
+- Videos are automatically enhanced for better quality
+- All videos are saved to the downloads folder
+- Features include prompt enhancement, auto-translation, and real-time status tracking
+
+Answer user questions professionally and helpfully. If asked about technical issues, guide them appropriately.
+Keep responses concise but informative. Always be polite and helpful.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      config: {
+        systemInstruction: systemPrompt,
+      },
+      contents: query,
+    });
+
+    return response.text || "Maaf, saya tidak dapat memproses pertanyaan Anda saat ini. Silakan coba lagi.";
+  } catch (error) {
+    console.error("Failed to process chatbot query:", error);
+    return "Maaf, terjadi kesalahan pada sistem. Silakan coba lagi nanti.";
   }
 }

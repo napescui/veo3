@@ -1,54 +1,104 @@
-import { type Video, type InsertVideo, type UpdateVideo } from "@shared/schema";
+import { type Video, type InsertVideo, type UpdateVideo, type User, type InsertUser, type UpdateUser } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { users, videos } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 export interface IStorage {
+  // Video operations
   getVideo(id: string): Promise<Video | undefined>;
   createVideo(video: InsertVideo & { generationId?: string; status?: string; errorMessage?: string }): Promise<Video>;
   updateVideo(id: string, updates: UpdateVideo): Promise<Video | undefined>;
+  getAllVideos(userId?: string): Promise<Video[]>;
+  
+  // User operations
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, updates: UpdateUser): Promise<User | undefined>;
+  validateUser(email: string, password: string): Promise<User | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private videos: Map<string, Video>;
-
-  constructor() {
-    this.videos = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
+  // Video operations
   async getVideo(id: string): Promise<Video | undefined> {
-    return this.videos.get(id);
+    const [video] = await db.select().from(videos).where(eq(videos.id, id));
+    return video || undefined;
   }
 
   async createVideo(data: InsertVideo & { generationId?: string; status?: string; errorMessage?: string }): Promise<Video> {
-    const id = randomUUID();
-    const now = new Date();
-    const video: Video = {
-      id,
-      prompt: data.prompt,
-      generationId: data.generationId || null,
-      status: data.status || "pending",
-      videoUrl: null,
-      errorMessage: data.errorMessage || null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    
-    this.videos.set(id, video);
+    const [video] = await db
+      .insert(videos)
+      .values({
+        prompt: data.prompt,
+        originalPrompt: data.originalPrompt,
+        userId: data.userId,
+        generationId: data.generationId || null,
+        status: data.status || "pending",
+        errorMessage: data.errorMessage || null,
+      })
+      .returning();
     return video;
   }
 
   async updateVideo(id: string, updates: UpdateVideo): Promise<Video | undefined> {
-    const video = this.videos.get(id);
-    if (!video) return undefined;
+    const [video] = await db
+      .update(videos)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(videos.id, id))
+      .returning();
+    return video || undefined;
+  }
 
-    const updatedVideo: Video = {
-      ...video,
-      ...updates,
-      updatedAt: new Date(),
-    };
+  async getAllVideos(userId?: string): Promise<Video[]> {
+    if (userId) {
+      return await db.select().from(videos).where(eq(videos.userId, userId));
+    }
+    return await db.select().from(videos);
+  }
 
-    this.videos.set(id, updatedVideo);
-    return updatedVideo;
+  // User operations
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async createUser(userData: InsertUser): Promise<User> {
+    // Hash password if provided
+    const hashedPassword = userData.password ? await bcrypt.hash(userData.password, 10) : null;
+    
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...userData,
+        password: hashedPassword,
+      })
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: string, updates: UpdateUser): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async validateUser(email: string, password: string): Promise<User | undefined> {
+    const user = await this.getUserByEmail(email);
+    if (!user || !user.password) return undefined;
+    
+    const isValid = await bcrypt.compare(password, user.password);
+    return isValid ? user : undefined;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

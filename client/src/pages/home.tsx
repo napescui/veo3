@@ -1,13 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { Video, Play, Sparkles, ArrowRight, Users, Clock, Download, Zap, Star, Cpu, Layers } from "lucide-react";
+import { Video, Play, Sparkles, ArrowRight, Users, Clock, Download, Zap, Star, Cpu, Layers, LogOut, User } from "lucide-react";
 import VideoGenerator from "@/components/video-generator";
+import { AuthForms } from "@/components/auth/auth-forms";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const { user, isAuthenticated, logout, isLoading } = useAuth();
+  const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -28,6 +34,31 @@ export default function Home() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logout berhasil",
+        description: "Sampai jumpa lagi!",
+      });
+      setShowGenerator(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Logout gagal",
+        description: "Terjadi kesalahan saat logout",
+      });
+    }
+  };
+
+  const handleStartFree = () => {
+    if (isAuthenticated) {
+      setShowGenerator(true);
+    } else {
+      setShowAuth(true);
+    }
+  };
 
   return (
     <div ref={containerRef} className="relative bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white min-h-screen overflow-x-hidden">
@@ -85,34 +116,59 @@ export default function Home() {
             </motion.div>
             
             <nav className="hidden md:flex items-center space-x-6 lg:space-x-8">
-              <motion.a 
-                href="#features" 
-                className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
-                whileHover={{ y: -2 }}
-              >
-                Features
-              </motion.a>
-              <motion.a 
-                href="#demo" 
-                className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
-                whileHover={{ y: -2 }}
-              >
-                Demo
-              </motion.a>
-              <motion.a 
-                href="#gallery" 
-                className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
-                whileHover={{ y: -2 }}
-              >
-                Gallery
-              </motion.a>
-              <motion.button 
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-4 lg:px-6 py-2 lg:py-2.5 rounded-xl transition-all duration-200 font-semibold shadow-lg shadow-purple-500/25 text-sm lg:text-base"
-                whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(168, 85, 247, 0.4)" }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Get Started
-              </motion.button>
+              {!showGenerator && (
+                <>
+                  <motion.a 
+                    href="#features" 
+                    className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
+                    whileHover={{ y: -2 }}
+                  >
+                    Features
+                  </motion.a>
+                  <motion.a 
+                    href="#demo" 
+                    className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
+                    whileHover={{ y: -2 }}
+                  >
+                    Demo
+                  </motion.a>
+                  <motion.a 
+                    href="#gallery" 
+                    className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
+                    whileHover={{ y: -2 }}
+                  >
+                    Gallery
+                  </motion.a>
+                </>
+              )}
+              
+              {isAuthenticated ? (
+                <div className="flex items-center space-x-4">
+                  <span className="text-slate-300 text-sm">
+                    Hi, {user?.firstName || user?.username || user?.email}
+                  </span>
+                  <motion.button 
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl transition-colors text-sm"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    data-testid="button-logout"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                  </motion.button>
+                </div>
+              ) : (
+                <motion.button 
+                  onClick={() => setShowAuth(true)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-4 lg:px-6 py-2 lg:py-2.5 rounded-xl transition-all duration-200 font-semibold shadow-lg shadow-purple-500/25 text-sm lg:text-base"
+                  whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(168, 85, 247, 0.4)" }}
+                  whileTap={{ scale: 0.95 }}
+                  data-testid="button-auth-modal"
+                >
+                  Login / Daftar
+                </motion.button>
+              )}
             </nav>
 
             {/* Mobile Menu Button */}
@@ -182,20 +238,21 @@ export default function Home() {
                   No editing skills required - just your imagination.
                 </motion.p>
 
+                {/* START FREE BUTTON - MOVED TO TOP AS REQUESTED */}
                 <motion.div 
-                  className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center lg:justify-start items-center mb-8 md:mb-16"
+                  className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center lg:justify-start items-center mb-12 md:mb-16"
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1, delay: 1 }}
                 >
                   <Button
-                    onClick={() => setShowGenerator(true)}
-                    className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 md:px-8 py-3 md:py-4 text-base md:text-lg font-semibold rounded-xl shadow-lg shadow-purple-500/25 transition-all duration-300 hover:shadow-purple-500/40 hover:scale-105"
+                    onClick={handleStartFree}
+                    className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 md:px-12 py-4 md:py-6 text-lg md:text-xl font-bold rounded-2xl shadow-lg shadow-purple-500/25 transition-all duration-300 hover:shadow-purple-500/40 hover:scale-105 transform"
                     size="lg"
-                    data-testid="button-start-creating"
+                    data-testid="button-start-free"
                   >
-                    <Play className="w-4 h-4 md:w-5 md:h-5 mr-2" />
-                    Start Creating Free
+                    <Play className="w-5 h-5 md:w-6 md:h-6 mr-3" />
+                    {isAuthenticated ? "Start Creating Free" : "Start Free"}
                   </Button>
                   <Button
                     variant="outline"
@@ -591,6 +648,54 @@ export default function Home() {
             Try it now
           </Button>
         </motion.div>
+      )}
+
+      {/* Authentication Modal */}
+      <AnimatePresence>
+        {showAuth && !isAuthenticated && (
+          <motion.div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={(e) => e.target === e.currentTarget && setShowAuth(false)}
+            data-testid="auth-modal-overlay"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="relative max-w-md w-full"
+              data-testid="auth-modal"
+            >
+              <button
+                onClick={() => setShowAuth(false)}
+                className="absolute -top-2 -right-2 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white z-10 transition-colors"
+                data-testid="button-close-auth-modal"
+              >
+                ×
+              </button>
+              <AuthForms />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-6 text-center text-sm text-slate-300"
+              >
+                <p>Setelah login, Anda dapat langsung mulai membuat video!</p>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Auto-redirect to generator after successful auth */}
+      {isAuthenticated && showAuth && (
+        <>
+          {setShowAuth(false)}
+          {setShowGenerator(true)}
+        </>
       )}
     </div>
   );

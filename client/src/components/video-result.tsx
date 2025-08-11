@@ -1,32 +1,62 @@
 
 import { Button } from "@/components/ui/button";
-import { Check, Download, Share, Clock } from "lucide-react";
+import { Check, Download, Share, Clock, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Video } from "@shared/schema";
+import type { Video as VideoType } from "@shared/schema";
 
 interface VideoResultProps {
-  video: Video;
+  video: VideoType;
 }
 
 export default function VideoResult({ video }: VideoResultProps) {
   const { toast } = useToast();
 
   const handleDownload = () => {
-    if (!video.videoUrl) return;
+    if (!video.id) return;
 
     try {
-      // Open video in new tab for download
-      window.open(video.videoUrl, '_blank');
+      // Use server download endpoint which serves from downloads folder
+      const downloadUrl = `/api/videos/${video.id}/download`;
+      
+      // Create a temporary link to trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `video-${video.id}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
       toast({
-        title: "Video dibuka",
-        description: "Video dibuka di tab baru. Klik kanan pada video untuk menyimpan.",
+        title: "Download dimulai",
+        description: "Video sedang didownload dari server.",
       });
     } catch (error) {
       console.error("Download error:", error);
       toast({
-        title: "Gagal membuka video",
-        description: "Silakan coba lagi atau copy link video.",
+        title: "Gagal download video",
+        description: "Silakan coba lagi nanti.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePreview = () => {
+    if (!video.videoPath && !video.videoUrl) return;
+
+    try {
+      // Preview from downloads folder if available, otherwise from original URL
+      const previewUrl = video.videoPath ? video.videoPath : video.videoUrl;
+      window.open(previewUrl, '_blank');
+      
+      toast({
+        title: "Preview dibuka",
+        description: "Video preview dibuka di tab baru.",
+      });
+    } catch (error) {
+      console.error("Preview error:", error);
+      toast({
+        title: "Gagal membuka preview",
+        description: "Silakan coba lagi nanti.",
         variant: "destructive",
       });
     }
@@ -79,19 +109,31 @@ export default function VideoResult({ video }: VideoResultProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleDownload}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border-slate-600"
+            onClick={handlePreview}
+            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 border-blue-500 text-white"
+            data-testid="button-preview-video"
           >
-            <Download className="w-4 h-4 mr-2" />
+            <Video className="w-4 h-4 mr-1" />
+            Preview
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+            className="px-3 py-2 bg-green-600 hover:bg-green-700 border-green-500 text-white"
+            data-testid="button-download-video"
+          >
+            <Download className="w-4 h-4 mr-1" />
             Download
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleShare}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border-slate-600"
+            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border-slate-600"
+            data-testid="button-share-video"
           >
-            <Share className="w-4 h-4 mr-2" />
+            <Share className="w-4 h-4 mr-1" />
             Share
           </Button>
         </div>

@@ -1,15 +1,180 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertVideoSchema, updateVideoSchema } from "@shared/schema";
+import { insertVideoSchema, updateVideoSchema, loginSchema, signupSchema } from "@shared/schema";
 import axios from "axios";
-import { enhancePrompt, translateToEnglish, detectLanguage } from "./gemini";
-import { GoogleGenAI } from "@google/genai";
+import { enhancePrompt, translateToEnglish, detectLanguage, handleChatbotQuery } from "./gemini";
+import express from "express";
+import session from "express-session";
+
+// Extend session interface
+declare module "express-session" {
+  interface Session {
+    userId?: string;
+  }
+}
+import connectPg from "connect-pg-simple";
+import fs from "fs";
+import path from "path";
 
 const ANABOT_API_BASE = "https://anabot.my.id/api/ai";
 const ANABOT_API_KEY = "freeApikey";
 
+// Session configuration
+function setupSession(app: Express) {
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false,
+    ttl: 7 * 24 * 60 * 60, // 1 week in seconds
+    tableName: "sessions",
+  });
+
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'dev-secret-key',
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to true in production with HTTPS
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    },
+  }));
+}
+
+// Authentication middleware
+const requireAuth = (req: any, res: any, next: any) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  next();
+};
+
+// Download video function
+async function downloadVideo(videoUrl: string, videoId: string): Promise<string> {
+  const downloadsDir = path.join(process.cwd(), 'downloads');
+  
+  // Create downloads directory if it doesn't exist
+  if (!fs.existsSync(downloadsDir)) {
+    fs.mkdirSync(downloadsDir, { recursive: true });
+  }
+  
+  const filePath = path.join(downloadsDir, `${videoId}.mp4`);
+  
+  // Download the video
+  const response = await axios({
+    url: videoUrl,
+    method: 'GET',
+    responseType: 'stream',
+    timeout: 60000, // 1 minute timeout
+  });
+  
+  const writer = fs.createWriteStream(filePath);
+  response.data.pipe(writer);
+  
+  return new Promise((resolve, reject) => {
+    writer.on('finish', () => resolve(filePath));
+    writer.on('error', reject);
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup session
+  setupSession(app);
+  
+  // Serve static files from downloads
+  app.use('/downloads', express.static(path.join(process.cwd(), 'downloads')));
+
+  // Authentication routes
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const userData = signupSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email sudah terdaftar" });
+      }
+      
+      const user = await storage.createUser(userData);
+      req.session.userId = user.id;
+      
+      // Don't send password back
+      const { password, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword });
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(400).json({ message: "Data registrasi tidak valid" });
+    }
+  });
+  
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const loginData = loginSchema.parse(req.body);
+      
+      const user = await storage.validateUser(loginData.email, loginData.password);
+      if (!user) {
+        return res.status(401).json({ message: "Email atau password salah" });
+      }
+      
+      req.session.userId = user.id;
+      
+      // Don't send password back
+      const { password, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(400).json({ message: "Data login tidak valid" });
+    }
+  });
+  
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.json({ message: "Logout berhasil" });
+    });
+  });
+  
+  app.get("/api/auth/me", async (req: any, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Don't send password back
+      const { password, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword });
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Chatbot route
+  app.post("/api/chatbot", async (req, res) => {
+    try {
+      const { query } = req.body;
+      
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ 
+          message: "Query is required" 
+        });
+      }
+
+      const response = await handleChatbotQuery(query);
+      res.json({ response });
+    } catch (error) {
+      console.error("Chatbot error:", error);
+      res.status(500).json({ 
+        message: "Terjadi kesalahan pada chatbot" 
+      });
+    }
+  });
   
   // Enhance prompt endpoint
   app.post("/api/enhance-prompt", async (req, res) => {
@@ -60,9 +225,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create a new video generation request
-  app.post("/api/videos", async (req, res) => {
+  app.post("/api/videos", async (req: any, res) => {
     try {
       const { prompt, autoTranslate = true } = req.body;
+      const userId = req.session.userId; // Can be undefined for guest users
       
       if (!prompt || prompt.trim().length < 10) {
         return res.status(400).json({ 
@@ -106,6 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const video = await storage.createVideo({
           prompt: finalPrompt,
           originalPrompt: wasTranslated ? prompt : undefined,
+          userId,
           generationId,
           status: "processing"
         });
@@ -119,6 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const video = await storage.createVideo({
           prompt: finalPrompt,
           originalPrompt: wasTranslated ? prompt : undefined,
+          userId,
           status: "failed",
           errorMessage: "Gagal terhubung ke layanan video generation"
         });
@@ -166,10 +334,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             let updateData: any = {};
 
             if (result.state === "success" && result.completeData?.data?.video_url) {
-              updateData = {
-                status: "success",
-                videoUrl: result.completeData.data.video_url
-              };
+              try {
+                // Auto-download video to server
+                const videoPath = await downloadVideo(result.completeData.data.video_url, id);
+                updateData = {
+                  status: "success",
+                  videoUrl: result.completeData.data.video_url,
+                  videoPath: `/downloads/${id}.mp4`
+                };
+              } catch (downloadError) {
+                console.error("Video download error:", downloadError);
+                // Still mark as success but without local path
+                updateData = {
+                  status: "success",
+                  videoUrl: result.completeData.data.video_url
+                };
+              }
             } else if (result.state === "fail" || result.state === "failed") {
               updateData = {
                 status: "failed",
@@ -216,6 +396,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Get video error:", error);
       res.status(500).json({ 
         message: "Failed to get video" 
+      });
+    }
+  });
+
+  // Get all videos (for authenticated users, show their videos)
+  app.get("/api/videos", async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const videos = await storage.getAllVideos(userId);
+      res.json(videos);
+    } catch (error) {
+      console.error("Get videos error:", error);
+      res.status(500).json({ 
+        message: "Failed to get videos" 
+      });
+    }
+  });
+
+  // Download video endpoint
+  app.get("/api/videos/:id/download", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const video = await storage.getVideo(id);
+
+      if (!video) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+
+      const filePath = path.join(process.cwd(), 'downloads', `${id}.mp4`);
+      
+      // Check if file exists locally
+      if (fs.existsSync(filePath)) {
+        res.download(filePath, `video-${id}.mp4`);
+      } else if (video.videoUrl) {
+        // If not downloaded yet, try to download and serve
+        try {
+          const downloadedPath = await downloadVideo(video.videoUrl, id);
+          await storage.updateVideo(id, { videoPath: `/downloads/${id}.mp4` });
+          res.download(downloadedPath, `video-${id}.mp4`);
+        } catch (downloadError) {
+          console.error("Download error:", downloadError);
+          res.status(500).json({ message: "Failed to download video" });
+        }
+      } else {
+        res.status(404).json({ message: "Video file not available" });
+      }
+    } catch (error) {
+      console.error("Download video error:", error);
+      res.status(500).json({ 
+        message: "Failed to download video" 
       });
     }
   });
@@ -290,33 +520,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Initialize Gemini for chat
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+      // Use the chatbot function instead of direct GoogleGenAI call
+      const botResponse = await handleChatbotQuery(message);
 
-      // Create context for Veo3 Lite customer service
-      const systemPrompt = `You are a helpful customer service assistant for Veo3 Lite, an AI-powered video generation platform. 
-
-Key features of Veo3 Lite:
-- Generates 8-second professional videos from text prompts
-- Uses advanced AI technology for high-quality video creation
-- Supports automatic prompt enhancement and translation
-- Processes up to 10 concurrent video generations
-- No editing skills required - just imagination
-- Free to use with fast generation times (under 3 minutes)
-
-Answer user questions about the platform, help with troubleshooting, explain features, and provide general support. Be friendly, helpful, and professional. If you don't know something specific about the platform, acknowledge it and offer to help in other ways.
-
-Respond in the same language as the user's question.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        config: {
-          systemInstruction: systemPrompt,
-        },
-        contents: message,
-      });
-
-      const botResponse = response.text || "I apologize, but I'm having trouble responding right now. Please try again in a moment.";
       res.json({ response: botResponse });
     } catch (error) {
       console.error("Chat error:", error);
