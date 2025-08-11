@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertVideoSchema, updateVideoSchema, loginSchema, signupSchema } from "@shared/schema";
 import axios from "axios";
-import { enhancePrompt, translateToEnglish, detectLanguage, handleChatbotQuery } from "./gemini";
+import { enhancePrompt, translateToEnglish, detectLanguage, handleChatbotQuery, generateRecommendations } from "./gemini";
 import express from "express";
 import session from "express-session";
 
@@ -230,6 +230,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Translation error:", error);
       res.status(500).json({ 
         message: "Gagal menerjemahkan teks" 
+      });
+    }
+  });
+
+  // Generate recommendations endpoint  
+  app.post("/api/generate-recommendations", async (req, res) => {
+    try {
+      const { userPrompts } = req.body;
+      
+      if (!userPrompts || typeof userPrompts !== 'string') {
+        return res.status(400).json({ 
+          message: "User prompts required" 
+        });
+      }
+
+      const recommendations = await generateRecommendations(userPrompts);
+      res.json({ recommendations });
+    } catch (error) {
+      console.error("Generate recommendations error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate recommendations",
+        recommendations: [
+          "A cat playing piano in a cozy room",
+          "Spiderman dancing on a rooftop",  
+          "Ocean waves crashing against cliffs",
+          "A majestic eagle soaring through mountain peaks at sunset"
+        ]
       });
     }
   });

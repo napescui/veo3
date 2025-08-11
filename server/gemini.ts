@@ -84,7 +84,7 @@ export async function handleChatbotQuery(query: string): Promise<string> {
 Key information about VideoAI:
 - We transform text prompts into professional 8-second videos using advanced AI
 - We support both Indonesian and English prompts (auto-translated)
-- Users can generate up to 10 videos simultaneously
+- Users can generate unlimited videos simultaneously (no limit)
 - Videos are automatically enhanced for better quality
 - All videos are saved to the downloads folder
 - Features include prompt enhancement, auto-translation, and real-time status tracking
@@ -105,4 +105,54 @@ Keep responses concise but informative. Always be polite and helpful.`;
     console.error("Failed to process chatbot query:", error);
     return "Maaf, terjadi kesalahan pada sistem. Silakan coba lagi nanti.";
   }
+}
+
+export async function generateRecommendations(userPrompts: string): Promise<string[]> {
+    try {
+        const systemPrompt = `You are a creative AI assistant that generates video prompt recommendations based on user patterns. 
+        
+Based on the user's previous prompts: "${userPrompts}"
+
+Generate 4 new creative video prompt recommendations that match the user's interests and themes. Consider:
+- Similar themes, characters, or settings the user enjoys
+- Creative variations or new ideas in the same style
+- Keep prompts concise but descriptive (max 50 words each)
+- Make them suitable for 8-second AI video generation
+
+Return ONLY a JSON array of 4 strings, nothing else.`;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            config: {
+                systemInstruction: systemPrompt,
+                responseMimeType: "application/json",
+            },
+            contents: userPrompts,
+        });
+
+        const rawJson = response.text;
+        if (rawJson) {
+            const recommendations = JSON.parse(rawJson);
+            if (Array.isArray(recommendations) && recommendations.length >= 4) {
+                return recommendations.slice(0, 4);
+            }
+        }
+
+        // Fallback if parsing fails
+        return [
+            "A cat playing piano in a cozy room",
+            "Spiderman dancing on a rooftop",  
+            "Ocean waves crashing against cliffs",
+            "A majestic eagle soaring through mountain peaks at sunset"
+        ];
+
+    } catch (error) {
+        console.error(`Failed to generate recommendations: ${error}`);
+        return [
+            "A cat playing piano in a cozy room",
+            "Spiderman dancing on a rooftop",  
+            "Ocean waves crashing against cliffs",
+            "A majestic eagle soaring through mountain peaks at sunset"
+        ];
+    }
 }

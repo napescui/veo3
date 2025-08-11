@@ -13,65 +13,28 @@ import ErrorDisplay from "./error-display";
 import VideoTotal from "./video-total";
 import type { Video } from "@shared/schema";
 
-// Dynamic example prompts based on user patterns
-const getDynamicExamplePrompts = (videos: Video[]) => {
-  // Analyze user's previous prompts to generate relevant examples
-  const userPrompts = videos.map(v => v.prompt.toLowerCase());
-  
-  // Check for common themes
-  const hasLego = userPrompts.some(p => p.includes('lego'));
-  const hasAnimal = userPrompts.some(p => p.includes('cat') || p.includes('dog') || p.includes('animal'));
-  const hasSuperhero = userPrompts.some(p => p.includes('spiderman') || p.includes('batman') || p.includes('superhero'));
-  const hasNature = userPrompts.some(p => p.includes('ocean') || p.includes('mountain') || p.includes('forest'));
-  const hasCartoon = userPrompts.some(p => p.includes('cartoon') || p.includes('anime') || p.includes('lucu'));
-  
-  // Generate recommendations based on user patterns
-  if (hasLego) {
-    return [
-      "Lego minifigure building a colorful castle",
-      "Lego car racing through a brick city",
-      "Lego spaceship exploring alien planets",
-      "Lego characters having a fun party"
-    ];
+// Dynamic example prompts using Gemini AI based on user patterns
+const getDynamicExamplePrompts = async (videos: Video[], apiRequestFn: any) => {
+  try {
+    // Get recent user prompts for analysis
+    const recentPrompts = videos.slice(0, 5).map(v => v.prompt).join('; ');
+    
+    if (recentPrompts.length > 0) {
+      // Request recommendations from Gemini
+      const response = await apiRequestFn("POST", "/api/generate-recommendations", { 
+        userPrompts: recentPrompts 
+      });
+      const data = await response.json();
+      
+      if (data.recommendations && data.recommendations.length > 0) {
+        return data.recommendations;
+      }
+    }
+  } catch (error) {
+    console.log("Using default prompts:", error);
   }
   
-  if (hasCartoon) {
-    return [
-      "Cute cartoon character dancing happily",
-      "Colorful cartoon animals playing together",
-      "Cartoon superhero saving the day",
-      "Funny cartoon chef cooking delicious food"
-    ];
-  }
-  
-  if (hasAnimal) {
-    return [
-      "Cute kitten playing with colorful yarn balls",
-      "Friendly dog running in a beautiful park",
-      "Majestic lion roaring at sunset",
-      "Playful dolphins jumping in ocean waves"
-    ];
-  }
-  
-  if (hasSuperhero) {
-    return [
-      "Superman flying through city skyline",
-      "Batman fighting crime in Gotham City",
-      "Wonder Woman using her golden lasso",
-      "Iron Man testing his new armor technology"
-    ];
-  }
-  
-  if (hasNature) {
-    return [
-      "Peaceful waterfall in tropical rainforest",
-      "Sunrise over mountain peaks with clouds",
-      "Cherry blossoms falling in spring breeze",
-      "Northern lights dancing in starry sky"
-    ];
-  }
-  
-  // Default prompts if no specific pattern detected
+  // Default prompts if no user history or error
   return [
     "A cat playing piano in a cozy room",
     "Spiderman dancing on a rooftop",  
@@ -84,11 +47,32 @@ export default function VideoGenerator() {
   const [prompt, setPrompt] = useState("");
   const [autoTranslate, setAutoTranslate] = useState(true);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [examplePrompts, setExamplePrompts] = useState([
+    "A cat playing piano in a cozy room",
+    "Spiderman dancing on a rooftop",  
+    "Ocean waves crashing against cliffs",
+    "A majestic eagle soaring through mountain peaks at sunset"
+  ]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Get dynamic example prompts based on user's previous videos
-  const examplePrompts = getDynamicExamplePrompts(videos);
+  // Update example prompts when videos change
+  useEffect(() => {
+    const updateExamplePrompts = async () => {
+      try {
+        const newPrompts = await getDynamicExamplePrompts(videos, apiRequest);
+        if (Array.isArray(newPrompts) && newPrompts.length > 0) {
+          setExamplePrompts(newPrompts);
+        }
+      } catch (error) {
+        console.log("Error updating prompts:", error);
+      }
+    };
+    
+    if (videos.length > 2) { // Only update when user has some history
+      updateExamplePrompts();
+    }
+  }, [videos]);
 
   // Enhance prompt mutation
   const enhancePromptMutation = useMutation({
@@ -242,7 +226,13 @@ export default function VideoGenerator() {
               id="prompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="A majestic eagle soaring through mountain peaks at sunset..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleGenerate();
+                }
+              }}
+              placeholder="A majestic eagle soaring through mountain peaks at sunset... (Press Enter to generate)"
               className="w-full h-32 px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-accent placeholder-slate-500 focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none transition-all duration-200"
               maxLength={500}
             />

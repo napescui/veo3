@@ -145,7 +145,10 @@ export default function Home() {
               {isAuthenticated ? (
                 <div className="flex items-center space-x-4">
                   <span className="text-slate-300 text-sm">
-                    Hi, {user?.firstName || user?.username || user?.email}
+                    Hi, {user?.firstName && user?.lastName ? 
+                      `${user.firstName} ${user.lastName}` : 
+                      user?.firstName || user?.email?.split('@')[0] || 'User'
+                    }
                   </span>
                   <motion.button 
                     onClick={handleLogout}
