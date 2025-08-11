@@ -1,0 +1,129 @@
+Tujuan: tambahkan halaman legal dan panduan penggunaan lengkap ke website text-to-video saya, lalu integrasikan ke navigasi/footer, SEO, dan banner cookie. Pastikan bahasa utama Bahasa Indonesia (dengan versi Inggris ringkas di bawah tiap bagian).
+
+Info Produk (isi dulu)
+Nama produk/brand: {{BRAND_NAME}}
+
+Domain: {{BASE_URL}}
+
+Perusahaan/individu: {{LEGAL_ENTITY}}
+
+Negara hukum utama: {{JURISDICTION}} (mis. Indonesia)
+
+Email/legal contact: {{LEGAL_EMAIL}}
+
+Alamat surat-menyurat (opsional): {{LEGAL_ADDRESS}}
+
+Metode pembayaran: {{PAYMENTS}} (mis. kartu, e-wallet)
+
+Kebijakan refund: {{REFUND_WINDOW}} (mis. 7/14/30 hari)
+
+Target pengguna: {{TARGET_USERS}} (mis. kreator konten, bisnis)
+
+Stack (jika diketahui): {{STACK}} (mis. Next.js/Vite/HTML statis)
+
+Tugas Utama
+Audit Repo & Routing
+
+Deteksi stack & sistem routing.
+
+Jika tidak ada sistem halaman legal, buat /legal sebagai direktori induk.
+
+Buat Halaman Berikut (Bahasa Indonesia + ringkasan Inggris)
+
+Kebijakan Privasi (/legal/privacy): dasar hukum pemrosesan data; jenis data; tujuan; dasar pemrosesan; penyimpanan & retensi; hak pengguna; transfer lintas batas; keamanan; kontak; pembaruan kebijakan. Selaraskan dengan UU PDP Indonesia (UU No. 27/2022), dan beri catatan kompatibilitas umum GDPR/CCPA sebagai referensi (bukan nasihat hukum).
+
+Syarat & Ketentuan (ToS) (/legal/terms): definisi layanan text-to-video; akun; pembayaran & pembatalan; lisensi & kepemilikan IP untuk konten yang diunggah/dihasilkan AI; batasan penggunaan; garansi & pembatasan tanggung jawab; penghentian layanan; hukum yang berlaku & sengketa.
+
+Kebijakan Cookie (/legal/cookies): tipe cookie; tujuan; cara menonaktifkan; link preferensi.
+
+Kebijakan Penggunaan yang Dapat Diterima (AUP) (/legal/aup): larangan konten ilegal/berbahaya, pelanggaran hak cipta, kebencian, pelecehan, eksploitasi anak, spam, deepfake menipu, dll.
+
+Kebijakan Hak Cipta & DMCA (/legal/dmca): cara lapor takedown; info yang dibutuhkan; counter-notice.
+
+Kebijakan Refund & Penagihan (/legal/refund): masa refund {{REFUND_WINDOW}}; kondisi kelayakan; pro-rata; pajak.
+
+Pernyataan AI & Transparansi (/legal/ai-disclosure): menegaskan output dibuat oleh AI; potensi bias/ketidakakuratan; kewajiban verifikasi pengguna; larangan klaim medis/finansial/ hukum dari output.
+
+Keamanan & Pelaporan Kerentanan (/legal/security): praktik dasar; email security; “responsible disclosure”.
+
+Perlindungan Anak & Batas Usia (/legal/age): minimum 13/16/18 sesuai yurisdiksi; parental consent jika perlu.
+
+Buat Halaman Bantuan/Produk
+
+Cara Pakai (/help/getting-started): langkah 1) tulis naskah, 2) pilih gaya, 3) unggah aset, 4) render/unduh; tip kualitas; batas durasi; format ekspor.
+
+FAQ (/help/faq): batas ukuran file, format didukung, durasi render, hak komersial, watermark, harga, error umum.
+
+Panduan Kepatuhan Konten (/help/content-policy): contoh yang boleh & tidak, contoh “fair use”.
+
+Harga & Paket (/pricing): fitur per paket; limit; kebijakan pemakaian wajar (rate-limit).
+
+Integrasi UI
+
+Tambah link ke footer: Privacy, Terms, Cookies, AUP, DMCA, Refund, Security, AI Disclosure, Help, Pricing, Contact.
+
+Tambah halaman Contact (/contact) dengan form (nama, email, pesan) yang mengirim ke {{LEGAL_EMAIL}}.
+
+Tampilkan cookie consent banner non-intrusif: tombol Accept all, Reject non-essential, Preferences (link ke /legal/cookies).
+
+Tambah badge “AI-generated possible” di area hasil/preview + link ke /legal/ai-disclosure.
+
+Kepatuhan Data
+
+Buat komponen Consent Manager (toggle Analytics/Marketing/Functional).
+
+Implementasikan Do Not Track dasar jika mudah.
+
+Tambahkan halaman Data Request (/legal/data-requests) dengan form: akses, koreksi, hapus, portabilitas (kirim ke {{LEGAL_EMAIL}}).
+
+SEO & Teknis
+
+Tambah sitemap.xml (sertakan semua halaman baru).
+
+Update robots.txt.
+
+Tambah meta tags title/description unik tiap halaman; canonical.
+
+Schema.org untuk halaman FAQ.
+
+Tambah link internal antar halaman legal.
+
+Konten & Nada
+
+Bahasa jelas, non-legalese, paragraf pendek, heading rapi, daftar poin.
+
+Di setiap halaman legal: satu blok “Ini bukan nasihat hukum”.
+
+Versi Inggris ringkas di bawah (judul: “English Summary”).
+
+Output yang Diharapkan
+
+Buat branch: feat/legal-and-help-pages.
+
+Commit terpisah: chore: setup legal routes, feat: privacy policy, feat: terms, dst.
+
+Jalankan lint/build; perbaiki lint errors.
+
+Berikan ringkasan perubahan + daftar URL halaman.
+
+Ketentuan/Placeholder Wajib
+Ganti semua placeholder {{…}} dengan nilai yang saya isi di atas.
+
+Jika stack tidak terdeteksi, buat halaman HTML statis di /public/legal/* dan /public/help/*, lalu link dari footer.
+
+Jangan menambahkan pelacakan pihak ketiga tanpa persetujuan melalui consent manager.
+
+Kriteria Penerimaan (Acceptance)
+Semua URL baru dapat diakses dan terhubung dari footer.
+
+Cookie banner muncul sekali per user dan preferensi tersimpan.
+
+Sitemap & robots ter-update, tidak ada broken link.
+
+Halaman legal berbahasa Indonesia, ada ringkasan Inggris.
+
+Tidak ada error di console browser & build sukses.
+
+Catatan
+Selaraskan dengan regulasi Indonesia (UU ITE & UU PDP). Konten adalah templat umum, bukan nasihat hukum; tetap beri ruang kustomisasi.
+

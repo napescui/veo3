@@ -1,0 +1,41 @@
+User-agent: *
+Allow: /
+Allow: /legal/
+Allow: /help/
+Allow: /contact
+Allow: /pricing
+
+# Sitemap
+Sitemap: https://videoai.id/sitemap.xml
+
+# Rate limiting for crawlers
+Crawl-delay: 1
+
+# Specific bot permissions
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: facebookexternalhit
+Allow: /
+
+# Block sensitive areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /*.json$
+Disallow: /*?*
+
+# Allow important static files
+Allow: /sitemap.xml
+Allow: /robots.txt
+Allow: /*.css
+Allow: /*.js
+Allow: /*.png
+Allow: /*.jpg
+Allow: /*.jpeg
+Allow: /*.gif
+Allow: /*.svg
