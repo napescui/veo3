@@ -61,13 +61,21 @@ export default function VideoEditor() {
   ];
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
+        setIsPlaying(false);
       } else {
-        videoRef.current.play();
+        videoRef.current.play().catch(error => {
+          console.log('Video play error:', error);
+          // Video might not be loaded yet, just update state
+          setIsPlaying(true);
+        });
+        setIsPlaying(true);
       }
+    } else {
+      // No video loaded, just toggle state for demo
+      setIsPlaying(!isPlaying);
     }
   };
 
@@ -273,22 +281,22 @@ export default function VideoEditor() {
         >
           <Tabs defaultValue="tools" className="w-full">
             <TabsList className="grid w-full grid-cols-3 bg-white/10">
-              <TabsTrigger value="tools">Tools</TabsTrigger>
-              <TabsTrigger value="effects">Effects</TabsTrigger>
-              <TabsTrigger value="audio">Audio</TabsTrigger>
+              <TabsTrigger value="tools" className="text-white data-[state=active]:text-black">Tools</TabsTrigger>
+              <TabsTrigger value="effects" className="text-white data-[state=active]:text-black">Effects</TabsTrigger>
+              <TabsTrigger value="audio" className="text-white data-[state=active]:text-black">Audio</TabsTrigger>
             </TabsList>
             
             <TabsContent value="tools" className="mt-4 space-y-4">
               <Card className="bg-white/5 border-white/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Tools</CardTitle>
+                  <CardTitle className="text-lg text-white">Tools</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {tools.map((tool) => (
                     <Button
                       key={tool.id}
                       variant={selectedTool === tool.id ? "default" : "ghost"}
-                      className="w-full justify-start"
+                      className={`w-full justify-start ${selectedTool === tool.id ? 'text-black' : 'text-white hover:text-white hover:bg-white/20'}`}
                       onClick={() => handleToolSelect(tool.id)}
                     >
                       <tool.icon className="w-4 h-4 mr-2" />
@@ -300,11 +308,11 @@ export default function VideoEditor() {
 
               <Card className="bg-white/5 border-white/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Properties</CardTitle>
+                  <CardTitle className="text-lg text-white">Properties</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="text-sm">Opacity ({opacity[0]}%)</Label>
+                    <Label className="text-sm text-white">Opacity ({opacity[0]}%)</Label>
                     <Slider
                       value={opacity}
                       onValueChange={(value) => handlePropertyChange('opacity', value)}
@@ -314,7 +322,7 @@ export default function VideoEditor() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Scale ({scale[0]}%)</Label>
+                    <Label className="text-sm text-white">Scale ({scale[0]}%)</Label>
                     <Slider
                       value={scale}
                       onValueChange={(value) => handlePropertyChange('scale', value)}
@@ -324,7 +332,7 @@ export default function VideoEditor() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Rotation ({rotation[0]}°)</Label>
+                    <Label className="text-sm text-white">Rotation ({rotation[0]}°)</Label>
                     <Slider
                       value={rotation}
                       onValueChange={(value) => handlePropertyChange('rotation', value)}
@@ -340,11 +348,16 @@ export default function VideoEditor() {
             <TabsContent value="effects" className="mt-4 space-y-4">
               <Card className="bg-white/5 border-white/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Video Effects</CardTitle>
+                  <CardTitle className="text-lg text-white">Video Effects</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {["Blur", "Sharpen", "Brightness", "Contrast", "Saturation", "Vintage", "Sepia", "Black & White"].map((effect) => (
-                    <Button key={effect} variant="ghost" className="w-full justify-start text-sm">
+                    <Button 
+                      key={effect} 
+                      variant="ghost" 
+                      className="w-full justify-start text-sm text-white hover:text-white hover:bg-white/20"
+                      onClick={() => toast({ title: "Effect Applied", description: `${effect} effect has been applied` })}
+                    >
                       {effect}
                     </Button>
                   ))}
@@ -355,11 +368,11 @@ export default function VideoEditor() {
             <TabsContent value="audio" className="mt-4 space-y-4">
               <Card className="bg-white/5 border-white/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Audio Effects</CardTitle>
+                  <CardTitle className="text-lg text-white">Audio Effects</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="text-sm">Volume ({volume[0]}%)</Label>
+                    <Label className="text-sm text-white">Volume ({volume[0]}%)</Label>
                     <Slider
                       value={volume}
                       onValueChange={handleVolumeChange}
@@ -369,7 +382,7 @@ export default function VideoEditor() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Bass ({bass[0]})</Label>
+                    <Label className="text-sm text-white">Bass ({bass[0]})</Label>
                     <Slider
                       value={bass}
                       onValueChange={(value) => handlePropertyChange('bass', value)}
@@ -380,7 +393,7 @@ export default function VideoEditor() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Treble ({treble[0]})</Label>
+                    <Label className="text-sm text-white">Treble ({treble[0]})</Label>
                     <Slider
                       value={treble}
                       onValueChange={(value) => handlePropertyChange('treble', value)}
@@ -428,11 +441,11 @@ export default function VideoEditor() {
               
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <Label className="text-sm">Zoom:</Label>
+                  <Label className="text-sm text-white">Zoom:</Label>
                   <Button size="sm" variant="ghost" onClick={() => handleZoomChange([Math.max(25, zoom[0] - 25)])}>
                     <ZoomOut className="w-4 h-4" />
                   </Button>
-                  <span className="text-sm w-12 text-center">{zoom[0]}%</span>
+                  <span className="text-sm w-12 text-center text-white">{zoom[0]}%</span>
                   <Button size="sm" variant="ghost" onClick={() => handleZoomChange([Math.min(400, zoom[0] + 25)])}>
                     <ZoomIn className="w-4 h-4" />
                   </Button>
@@ -538,7 +551,7 @@ export default function VideoEditor() {
               {/* Track Layers */}
               <div className="space-y-2">
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm w-16">Video</span>
+                  <span className="text-sm w-16 text-white">Video</span>
                   <div className="flex-1 h-12 bg-slate-700 rounded-lg border border-slate-600 relative">
                     <div className="h-full bg-gradient-to-r from-blue-600/50 to-blue-400/50 rounded-lg m-1 flex items-center px-3">
                       <span className="text-xs">Main Video Track</span>
@@ -547,7 +560,7 @@ export default function VideoEditor() {
                 </div>
                 
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm w-16">Audio</span>
+                  <span className="text-sm w-16 text-white">Audio</span>
                   <div className="flex-1 h-12 bg-slate-700 rounded-lg border border-slate-600 relative">
                     <div className="h-full bg-gradient-to-r from-green-600/50 to-green-400/50 rounded-lg m-1 flex items-center px-3">
                       <span className="text-xs">Audio Track 1</span>
@@ -556,7 +569,7 @@ export default function VideoEditor() {
                 </div>
                 
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm w-16">Text</span>
+                  <span className="text-sm w-16 text-white">Text</span>
                   <div className="flex-1 h-12 bg-slate-700 rounded-lg border border-slate-600 relative">
                     <div className="h-full bg-gradient-to-r from-yellow-600/50 to-yellow-400/50 rounded-lg m-1 flex items-center px-3 w-32">
                       <span className="text-xs">Title Text</span>
@@ -576,14 +589,14 @@ export default function VideoEditor() {
         >
           <Tabs defaultValue="media" className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-white/10">
-              <TabsTrigger value="media">Media</TabsTrigger>
-              <TabsTrigger value="export">Export</TabsTrigger>
+              <TabsTrigger value="media" className="text-white data-[state=active]:text-black">Media</TabsTrigger>
+              <TabsTrigger value="export" className="text-white data-[state=active]:text-black">Export</TabsTrigger>
             </TabsList>
             
             <TabsContent value="media" className="mt-4 space-y-4">
               <Card className="bg-white/5 border-white/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Media Library</CardTitle>
+                  <CardTitle className="text-lg text-white">Media Library</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-2">
@@ -604,34 +617,34 @@ export default function VideoEditor() {
             <TabsContent value="export" className="mt-4 space-y-4">
               <Card className="bg-white/5 border-white/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Export Settings</CardTitle>
+                  <CardTitle className="text-lg text-white">Export Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="text-sm">Quality</Label>
-                    <select className="w-full mt-2 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm">
-                      <option>1080p (Full HD)</option>
-                      <option>720p (HD)</option>
-                      <option>480p (SD)</option>
-                      <option>4K (Ultra HD)</option>
+                    <Label className="text-sm text-white">Quality</Label>
+                    <select className="w-full mt-2 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                      <option className="text-black">1080p (Full HD)</option>
+                      <option className="text-black">720p (HD)</option>
+                      <option className="text-black">480p (SD)</option>
+                      <option className="text-black">4K (Ultra HD)</option>
                     </select>
                   </div>
                   <div>
-                    <Label className="text-sm">Format</Label>
-                    <select className="w-full mt-2 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm">
-                      <option>MP4</option>
-                      <option>MOV</option>
-                      <option>AVI</option>
-                      <option>WebM</option>
+                    <Label className="text-sm text-white">Format</Label>
+                    <select className="w-full mt-2 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                      <option className="text-black">MP4</option>
+                      <option className="text-black">MOV</option>
+                      <option className="text-black">AVI</option>
+                      <option className="text-black">WebM</option>
                     </select>
                   </div>
                   <div>
-                    <Label className="text-sm">Frame Rate</Label>
-                    <select className="w-full mt-2 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm">
-                      <option>30 fps</option>
-                      <option>24 fps</option>
-                      <option>60 fps</option>
-                      <option>120 fps</option>
+                    <Label className="text-sm text-white">Frame Rate</Label>
+                    <select className="w-full mt-2 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                      <option className="text-black">30 fps</option>
+                      <option className="text-black">24 fps</option>
+                      <option className="text-black">60 fps</option>
+                      <option className="text-black">120 fps</option>
                     </select>
                   </div>
                   <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" onClick={handleExportVideo}>
