@@ -17,6 +17,38 @@ import connectPg from "connect-pg-simple";
 import fs from "fs";
 import path from "path";
 
+// Function to save user data to JSON file
+function saveUserToFile(user: any) {
+  try {
+    const databaseDir = path.join(process.cwd(), 'database');
+    if (!fs.existsSync(databaseDir)) {
+      fs.mkdirSync(databaseDir, { recursive: true });
+    }
+    
+    const fileName = `${user.firstName || 'User'}_${user.lastName || user.email.split('@')[0]}.json`;
+    const filePath = path.join(databaseDir, fileName);
+    
+    const userData = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImageUrl: user.profileImageUrl,
+      provider: user.provider,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      // Don't save password hash to file for security
+      hasPassword: !!user.password
+    };
+    
+    fs.writeFileSync(filePath, JSON.stringify(userData, null, 2));
+    console.log(`User data saved to: ${fileName}`);
+  } catch (error) {
+    console.error('Error saving user to file:', error);
+  }
+}
+
 const ANABOT_API_BASE = "https://anabot.my.id/api/ai";
 const ANABOT_API_KEY = "freeApikey";
 
@@ -109,6 +141,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.createUser(userData);
       req.session.userId = user.id;
+      
+      // Save user data to JSON file
+      saveUserToFile(user);
       
       // Don't send password back
       const { password, ...userWithoutPassword } = user;

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import VideoEditor from "@/pages/video-editor";
 import CustomerService from "@/components/customer-service";
 import CookieBanner from "@/components/cookie-banner";
 import Footer from "@/components/footer";
@@ -36,6 +37,7 @@ function Router() {
       <div className="flex-1">
         <Switch>
           <Route path="/" component={Home} />
+          <Route path="/editor" component={VideoEditor} />
           
           {/* Legal Routes */}
           <Route path="/legal/privacy" component={PrivacyPolicy} />
