@@ -139,7 +139,7 @@ export default function VideoResult({ video }: VideoResultProps) {
         </div>
       </div>
 
-      {/* Video Player */}
+      {/* Video Player - Use downloads path if available for better loading */}
       <div className="relative bg-black rounded-xl overflow-hidden mb-4">
         <video 
           className="w-full h-auto max-h-96" 
@@ -147,16 +147,22 @@ export default function VideoResult({ video }: VideoResultProps) {
           preload="metadata"
           playsInline
           crossOrigin="anonymous"
-          src={video.videoUrl || undefined}
+          src={video.videoPath ? video.videoPath : video.videoUrl || undefined}
           onLoadedMetadata={(e) => {
             const duration = e.currentTarget.duration;
             console.log('Video loaded, duration:', duration);
           }}
           onError={(e) => {
             console.error('Video error:', e);
+            // If downloads path fails, try original URL
+            const videoElement = e.currentTarget;
+            if (video.videoPath && video.videoUrl && videoElement.src.includes('/downloads/')) {
+              console.log('Fallback to original URL');
+              videoElement.src = video.videoUrl;
+            }
           }}
           onCanPlay={() => {
-            console.log('Video can play');
+            console.log('Video can play from:', video.videoPath ? 'downloads folder' : 'original URL');
           }}
         >
           Your browser does not support the video tag.

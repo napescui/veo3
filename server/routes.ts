@@ -83,8 +83,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session
   setupSession(app);
   
-  // Serve static files from downloads
-  app.use('/downloads', express.static(path.join(process.cwd(), 'downloads')));
+  // Serve static files from downloads with proper headers
+  app.use('/downloads', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+  }, express.static(path.join(process.cwd(), 'downloads'), {
+    setHeaders: (res, path) => {
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Accept-Ranges', 'bytes');
+    }
+  }));
 
   // Authentication routes
   app.post("/api/auth/signup", async (req, res) => {
