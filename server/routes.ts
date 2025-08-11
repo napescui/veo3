@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertVideoSchema, updateVideoSchema, loginSchema, signupSchema } from "@shared/schema";
+import uploadRoutes from "./upload";
 import axios from "axios";
 import { enhancePrompt, translateToEnglish, detectLanguage, handleChatbotQuery, generateRecommendations } from "./gemini";
 import express from "express";
@@ -603,6 +604,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Upload routes
+  app.use('/api/upload', uploadRoutes);
+  
+  // Serve static files  
+  app.use('/uploads', express.static('uploads'));
 
   const httpServer = createServer(app);
   return httpServer;

@@ -1,14 +1,23 @@
-# VideoAI - AI-Powered Video Generation Platform
+# JrennGenerator - Professional Video Editor Platform
 
 ## Overview
 
-VideoAI is a modern web application that transforms text prompts into professional 8-second videos using advanced AI technology. The platform provides a seamless user experience for generating videos without requiring any editing skills. Key features include:
+JrennGenerator is a comprehensive web-based video editing platform that combines AI-powered video generation with a full-featured video editor similar to Adobe Premiere Pro. The platform provides both automated video creation and professional editing capabilities. Key features include:
 
+**AI Video Generation:**
 - **Text-to-Video Generation**: Convert text prompts into 8-second AI videos using anabot.my.id API
 - **Prompt Enhancement**: AI-powered prompt improvement using Gemini 2.5 Flash for better video quality
 - **Auto-Translation**: Automatic translation from Indonesian to English for optimal video generation
 - **Background Processing**: Queue up to 10 concurrent video generations with real-time status tracking
-- **Spam-Capable Generation**: Generate multiple videos simultaneously from different prompts
+
+**Professional Video Editor:**
+- **Multi-Track Timeline**: Unlimited video and audio tracks with drag & drop functionality
+- **Advanced Editing**: Cut, trim, split, transitions, speed control, and keyframe animation
+- **Color Correction**: Exposure, contrast, saturation, temperature, and LUT support
+- **Audio Editing**: Multi-track audio, EQ, volume keyframes, and fade effects
+- **Text & Graphics**: Dynamic text layers, lower-thirds, captions, and image overlays
+- **Real-Time Preview**: WebGL/WebGPU compositing with smooth playback
+- **Export Options**: Server-side FFmpeg rendering with multiple format presets
 
 ## User Preferences
 

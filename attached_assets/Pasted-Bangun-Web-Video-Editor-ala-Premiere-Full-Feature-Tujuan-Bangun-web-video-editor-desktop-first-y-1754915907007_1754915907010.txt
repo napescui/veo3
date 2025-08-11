@@ -1,0 +1,233 @@
+Bangun Web Video Editor “ala Premiere” (Full-Feature)
+Tujuan
+Bangun web video editor desktop-first yang mendukung multi-track timeline, drag & drop, cut/trim/split, transitions, text & captions, audio editing, efek warna, speed control, keyframe animasi, preview real-time, dan export MP4. Editor harus bisa upload file lokal & URL, autosave proyek, dan render final via FFmpeg (server), dengan opsi export ringan via ffmpeg.wasm (client).
+
+Konfigurasi (boleh diedit)
+BRAND: {{BRAND_NAME}}
+
+BASE_URL: {{BASE_URL}}
+
+STORAGE: local (IndexedDB) + server uploads (folder /uploads)
+
+RENDER_MODE: server-first (Node + FFmpeg), fallback client (ffmpeg.wasm)
+
+AUTH (opsional): disable (untuk demo)
+
+MAX_FILE_SIZE: 2GB
+
+DEFAULT_EXPORT: H.264 MP4, 1080p30, AAC 160kbps
+
+Arsitektur Teknis
+Frontend: React + TypeScript + Vite, Zustand (state), React Router, Tailwind (UI).
+
+Media Engine:
+
+Preview: WebGL/WebGPU (jika tersedia) untuk compositing layer (shaders untuk color & blend).
+
+Audio: Web Audio API (gain, pan, mute/solo, keyframe volume).
+
+Workers: Web Workers untuk thumbnail, waveform, proxy generation.
+
+Persistence: IndexedDB (autosave tiap 3 dtk & onBlur).
+
+Backend: Node.js (Express) + FFmpeg (native) untuk final render, thumbs, transcode.
+
+Job queue: BullMQ + Redis (opsional; kalau tidak ada Redis, pakai in-memory queue).
+
+File I/O: chunked upload + resumable (tus-like, minimal implementasi).
+
+WASM: ffmpeg.wasm (fallback export & on-device ops sederhana).
+
+Fitur Wajib (MVP KAYA)
+Project & Media
+
+New/Open/Save/Export Project (JSON schema).
+
+Import: drag-drop video, audio, image (mp4, mov(h264), webm, mp3, wav, png).
+
+Proxy generator (720p, 2–4Mbps) + toggle “Use Proxies”.
+
+Timeline & Tracks
+
+Multi-track Video & Audio tak terbatas (dibatasi performa).
+
+Zoom timeline, snap (N toggle), ripple delete, ripple trim, magnetic.
+
+Playhead, markers (M), in/out (I/O), razor (C), select (V).
+
+Undo/Redo (Ctrl+Z / Ctrl+Shift+Z), Copy/Paste klip.
+
+Thumbnails video & waveform audio.
+
+Editing Dasar
+
+Split (S), trim di handle, drag klip, lock/mute/solo track.
+
+Speed (0.25×–4×), reverse, freeze frame, time-remap sederhana (2 titik).
+
+Transform: position/scale/rotate, crop & fit/fill, opacity (semua via keyframe).
+
+Transisi & Efek
+
+Transitions: crossfade, dip-to-black/white, slide, wipe (durasi & easing).
+
+Color: exposure/contrast/saturation/temp/tint; dukung LUT (.cube).
+
+Blend modes: normal, multiply, screen, overlay (shader WebGL).
+
+Chroma key (green screen) dasar (threshold & spill).
+
+Teks, Gambar, Caption
+
+Text layer (font, size, weight, stroke, shadow), lower-third templates.
+
+Image/Sticker/Logo layer (png/webp).
+
+Caption/Subtitles: import/export SRT/VTT, styling dasar, snap ke dialog.
+
+Audio
+
+Gain, volume keyframes, fade in/out, normalize peak.
+
+EQ 3-band sederhana (biquad filters), ducking opsional (music vs voice).
+
+Preview & Playback
+
+Preview quality: Full/Half/Quarter.
+
+Safe margins, ruler timecode, FPS (24/25/30).
+
+Caching frame untuk scrubbing halus.
+
+Export
+
+Preset: 1080p (landscape), 1080x1920 (portrait), 1080x1080 (square).
+
+Server render (FFmpeg): H.264 + AAC, bitrate VBR, faststart, metadata.
+
+Client export (WASM) fallback untuk proyek kecil (<1 menit total).
+
+Watermark opsional (logo + opacity).
+
+Progress bar + notifikasi selesai + download URL.
+
+Shortcuts (default)
+
+J/K/L (reverse/pause/play), Space (play/pause), S (split), C (razor),
+V (select), N (snap), M (marker), Del (delete), Shift+Del (ripple delete).
+
+Keandalan & UX
+
+Autosave & recovery (draft terakhir).
+
+Drag handle besar, ghost clip saat drag, tooltips & help panel.
+
+A11y: fokus, ARIA, kontrast.
+
+Backend API (contoh)
+POST /api/upload/init → {uploadId, partSize}
+
+POST /api/upload/part → {uploadId, partNumber} (binary)
+
+POST /api/upload/complete → {fileId, url, meta}
+
+POST /api/transcode/proxy → body {fileId, target="720p"} → jobId
+
+POST /api/render → body {projectJSON, preset} → {jobId}
+
+GET /api/render/:jobId → status/progress + downloadUrl saat selesai
+
+GET /api/thumb?fileId&t=12.34 → PNG frame
+
+GET /api/waveform?fileId → PCM peaks JSON
+
+Render server: gunakan FFmpeg native. Pastikan support filter: scale, fps, xfade, afade, tpad, atrim, aresample, colorkey, lut3d, overlay, concat, setpts, atempo, zoompan (opsional).
+
+Struktur Frontend (ringkas)
+pgsql
+Copy code
+/src
+  /engine           // core compositing (WebGL/WebGPU), keyframe, layers
+  /ffmpeg           // wasm wrapper & helpers
+  /state            // Zustand stores: project, timeline, selection
+  /components
+    Timeline/
+      Tracks.tsx, Clips.tsx, Playhead.tsx, Ruler.tsx, Keyframes.tsx
+    Inspector/
+      TransformPanel.tsx, ColorPanel.tsx, AudioPanel.tsx, EffectsPanel.tsx
+    MediaBin/, Viewer/, Toolbar/, Topbar/, ShortcutsHelp.tsx
+  /pages
+    Editor.tsx, Export.tsx, Landing.tsx
+  /utils (timecode, snapping, undo-redo, file meta)
+Skema Project JSON (simplified)
+json
+Copy code
+{
+  "version": 1,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "duration": 0,
+  "tracks": [
+    { "id": "v1", "type": "video", "clips": [ /* clip objects */ ] },
+    { "id": "a1", "type": "audio", "clips": [ /* clip objects */ ] }
+  ],
+  "media": [
+    { "id": "m1", "type": "video", "src": "/uploads/abc.mp4", "proxy": "/uploads/abc_720p.mp4" }
+  ],
+  "effects": [],
+  "markers": []
+}
+Acceptance Criteria
+Import 5 media 1080p (total 3 menit) → timeline responsif; preview smooth ≥24 fps pada proxy 720p di laptop menengah.
+
+Split/trim/drag/snap/ripple delete berjalan stabil tanpa desync audio.
+
+Transisi crossfade & color correction bekerja real-time di preview (quality Half/Quarter).
+
+Export server menghasilkan MP4 H.264 sesuai preset; duration & audio sinkron.
+
+Autosave & restore berfungsi; tidak ada error fatal di console.
+
+Editor tetap usable jika tanpa server render (pakai WASM, proyek kecil).
+
+Langkah Implementasi
+Bootstrap proyek (React+TS+Vite), Tailwind, Zustand, Router, ESLint.
+
+Schema project + store & undo/redo.
+
+MediaBin (upload chunked + metadata + proxy job).
+
+Timeline (tracks, clips, snapping, selection, split, ripple).
+
+Viewer (WebGL compositing, transform, overlay teks, LUT, chroma key).
+
+Audio engine (Web Audio nodes, gain/pan, keyframe volume, waveform).
+
+Transitions & Effects (UI + mapping ke shader/FFmpeg).
+
+Export (server job → progress → download; WASM fallback).
+
+Autosave & recovery, keyboard shortcuts, help panel.
+
+QA: uji besar file, edge cases (no audio, VFR, alpha PNG, durasi 0), dan regresi.
+
+Catatan Penting
+Ini bukan klon 1:1 Premiere; namun fitur inti NLE wajib ada & usable.
+
+Pastikan semua efek/transisi punya padanan FFmpeg saat render final agar hasil sama dengan preview (atau berikan mapping & dokumentasi).
+
+Hindari blocking UI: semua hitung berat (thumbnails, waveform, proxies) jalan di Worker.
+
+Jangan pasang tracker pihak ketiga.
+
+Output yang diharapkan:
+
+Repo jalan (start dev & build OK).
+
+Halaman /editor berfungsi penuh (demo).
+
+Endpoint upload/render siap.
+
+README berisi cara run, env, dan batasan.
+

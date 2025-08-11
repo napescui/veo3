@@ -137,11 +137,11 @@ export default function Home() {
                 Gallery
               </motion.a>
               <motion.a 
-                href="/editor" 
+                href="/pro-editor" 
                 className="text-slate-300 hover:text-white transition-colors font-medium text-sm lg:text-base"
                 whileHover={{ y: -2 }}
               >
-                Editor Video
+                Pro Editor
               </motion.a>
               
               {isAuthenticated ? (
