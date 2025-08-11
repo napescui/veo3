@@ -177,7 +177,16 @@ export default function VideoGenerator() {
       return;
     }
 
-    // No limit on video generation - unlimited processing
+    // Check if any video is currently processing
+    const isAnyProcessing = videos.some(v => v.status === "processing");
+    if (isAnyProcessing) {
+      toast({
+        title: "Tunggu sebentar",
+        description: "Harap tunggu video sebelumnya selesai dulu sebelum generate yang baru.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     generateVideo.mutate(prompt);
   };
@@ -207,7 +216,8 @@ export default function VideoGenerator() {
 
   const processingCount = videos.filter(v => v.status === "processing").length;
   const isGenerating = generateVideo.isPending;
-  const canGenerate = true; // Always allow generation - unlimited
+  const isAnyProcessing = videos.some(v => v.status === "processing");
+  const canGenerate = !isGenerating && !isAnyProcessing; // Only allow if nothing is generating/processing
 
   return (
     <div className="space-y-8">
@@ -229,7 +239,17 @@ export default function VideoGenerator() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  handleGenerate();
+                  // Only generate if no videos are currently processing
+                  const isAnyProcessing = videos.some(v => v.status === "processing");
+                  if (!isAnyProcessing && !isGenerating) {
+                    handleGenerate();
+                  } else {
+                    toast({
+                      title: "Tunggu sebentar",
+                      description: "Harap tunggu video sebelumnya selesai dulu sebelum generate yang baru.",
+                      variant: "destructive",
+                    });
+                  }
                 }
               }}
               placeholder="A majestic eagle soaring through mountain peaks at sunset... (Press Enter to generate)"
@@ -246,18 +266,32 @@ export default function VideoGenerator() {
         <div className="mb-6">
           <p className="text-sm text-slate-400 mb-3">Try these examples:</p>
           <div className="flex flex-wrap gap-2">
-            {examplePrompts.map((example, index) => (
+            {Array.isArray(examplePrompts) && examplePrompts.length > 0 ? examplePrompts.map((example, index) => (
               <Button
                 key={index}
                 variant="outline"
                 size="sm"
                 onClick={() => handlePromptExample(example)}
                 className="px-3 py-2 bg-slate-800/50 hover:bg-slate-700 border-slate-600 text-sm"
-                disabled={isGenerating}
+                disabled={!canGenerate}
               >
                 {example}
               </Button>
-            ))}
+            )) : (
+              // Show default prompts while loading
+              ["A cat playing piano in a cozy room", "Spiderman dancing on a rooftop", "Ocean waves crashing against cliffs", "A majestic eagle soaring through mountain peaks at sunset"].map((example, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePromptExample(example)}
+                  className="px-3 py-2 bg-slate-800/50 hover:bg-slate-700 border-slate-600 text-sm"
+                  disabled={!canGenerate}
+                >
+                  {example}
+                </Button>
+              ))
+            )}
           </div>
         </div>
 
